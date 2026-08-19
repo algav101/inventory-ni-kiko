@@ -45,7 +45,7 @@ export const MobileShell: React.FC<MobileShellProps> = ({
             </div>
             <div>
               <h1 className="font-bold text-base tracking-tight leading-none text-white">
-                Kiko Meat Inventory
+                Kiko palit 2x2 App
               </h1>
               <div className="flex items-center gap-1.5 mt-1">
                 <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>

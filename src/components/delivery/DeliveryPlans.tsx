@@ -13,7 +13,6 @@ import {
 export const DeliveryPlans: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Form State
   const [clientInput, setClientInput] = useState('');
   const [deliveryDate, setDeliveryDate] = useState(
     new Date(Date.now() + 86400000).toISOString().split('T')[0]
@@ -21,14 +20,13 @@ export const DeliveryPlans: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [lineItems, setLineItems] = useState<{ itemId: number; qty: number }[]>([]);
 
-  // Live queries
   const plans = useLiveQuery(() => db.deliveryPlans.toArray()) ?? [];
   const clients = useLiveQuery(() => db.clients.toArray()) ?? [];
   const allItems = useLiveQuery(() => db.items.toArray()) ?? [];
 
   const handleAddLineItem = () => {
     if (allItems.length === 0) return;
-    setLineItems(prev => [...prev, { itemId: allItems[0].id!, qty: 5 }]);
+    setLineItems(prev => [...prev, { itemId: allItems[0].id!, qty: 1 }]);
   };
 
   const handleRemoveLineItem = (idx: number) => {
@@ -39,7 +37,6 @@ export const DeliveryPlans: React.FC = () => {
     e.preventDefault();
     if (!clientInput.trim() || lineItems.length === 0) return;
 
-    // Find or create client
     let clientObj = clients.find(c => c.name.toLowerCase() === clientInput.trim().toLowerCase());
     let clientId: number;
 
@@ -69,6 +66,7 @@ export const DeliveryPlans: React.FC = () => {
         item_id: line.itemId,
         item_name: itemObj ? `${itemObj.name} (${itemObj.size})` : `Item #${line.itemId}`,
         unit: itemObj?.unit || 'BOX',
+        pcs_per_box: itemObj?.pcs_per_box || 12,
         qty_planned: line.qty,
         qty_delivered: 0,
       });
@@ -80,11 +78,9 @@ export const DeliveryPlans: React.FC = () => {
     setNotes('');
   };
 
-  // Confirm / Fulfill Delivery Plan & Atomic Stock Deduction
   const handleConfirmDelivery = async (plan: DeliveryPlan) => {
     const planLines = await db.deliveryLineItems.where('delivery_plan_id').equals(plan.id!).toArray();
 
-    // Check stock deficits
     const deficits: string[] = [];
     for (const line of planLines) {
       const item = await db.items.get(line.item_id);
@@ -100,7 +96,6 @@ export const DeliveryPlans: React.FC = () => {
       if (!confirmProceed) return;
     }
 
-    // Atomic transaction for stock deduction & status change
     await db.transaction('rw', [db.items, db.deliveryPlans, db.deliveryLineItems, db.transactions], async () => {
       const now = new Date().toISOString();
 
@@ -113,6 +108,7 @@ export const DeliveryPlans: React.FC = () => {
         const item = await db.items.get(line.item_id);
         if (item) {
           const newQty = item.current_qty - line.qty_planned;
+          const totalPcsDeducted = line.qty_planned * (line.pcs_per_box || item.pcs_per_box || 1);
 
           await db.items.update(line.item_id, {
             current_qty: newQty,
@@ -129,7 +125,7 @@ export const DeliveryPlans: React.FC = () => {
             -line.qty_planned,
             newQty,
             item.latest_unit_cost,
-            `Delivery fulfilled to ${plan.client_name} (Plan #${plan.id})`,
+            `Delivered ${line.qty_planned} ${item.unit} (${totalPcsDeducted} pcs) to ${plan.client_name} (Plan #${plan.id})`,
             `DELIVERY-${plan.id}`
           );
         }
@@ -187,7 +183,6 @@ export const DeliveryPlans: React.FC = () => {
             </div>
 
             <form onSubmit={handleCreatePlan} className="space-y-3 text-xs">
-              {/* Client Autocomplete / Input */}
               <div>
                 <label className="block font-semibold text-slate-300 mb-1">Client / Store Name</label>
                 <input
@@ -232,7 +227,7 @@ export const DeliveryPlans: React.FC = () => {
               {/* Line Items Builder */}
               <div className="space-y-2 pt-2 border-t border-slate-800">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-300">Items to Deliver</span>
+                  <span className="font-bold text-slate-300">Items to Deliver (Boxes & Pcs)</span>
                   <button
                     type="button"
                     onClick={handleAddLineItem}
@@ -246,43 +241,52 @@ export const DeliveryPlans: React.FC = () => {
                 {lineItems.length === 0 ? (
                   <div className="text-slate-500 py-2 text-center">No item lines added. Click "Add Item Line".</div>
                 ) : (
-                  lineItems.map((line, idx) => (
-                    <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/80 border border-slate-700">
-                      <select
-                        value={line.itemId}
-                        onChange={e => {
-                          const val = Number(e.target.value);
-                          setLineItems(prev => prev.map((l, i) => (i === idx ? { ...l, itemId: val } : l)));
-                        }}
-                        className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white"
-                      >
-                        {allItems.map(item => (
-                          <option key={item.id} value={item.id}>
-                            {item.name} ({item.size}) - Stock: {item.current_qty} {item.unit}
-                          </option>
-                        ))}
-                      </select>
+                  lineItems.map((line, idx) => {
+                    const itemObj = allItems.find(i => i.id === line.itemId);
+                    const pcsPerBox = itemObj?.pcs_per_box || 12;
+                    const totalPcs = line.qty * pcsPerBox;
 
-                      <input
-                        type="number"
-                        min="1"
-                        value={line.qty}
-                        onChange={e => {
-                          const val = parseInt(e.target.value) || 1;
-                          setLineItems(prev => prev.map((l, i) => (i === idx ? { ...l, qty: val } : l)));
-                        }}
-                        className="w-16 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-center font-mono font-bold text-emerald-400"
-                      />
+                    return (
+                      <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/80 border border-slate-700">
+                        <select
+                          value={line.itemId}
+                          onChange={e => {
+                            const val = Number(e.target.value);
+                            setLineItems(prev => prev.map((l, i) => (i === idx ? { ...l, itemId: val } : l)));
+                          }}
+                          className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white"
+                        >
+                          {allItems.map(item => (
+                            <option key={item.id} value={item.id}>
+                              {item.name} ({item.size}) - Stock: {item.current_qty} BOXES ({item.pcs_per_box || 12} pcs/box)
+                            </option>
+                          ))}
+                        </select>
 
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveLineItem(idx)}
-                        className="text-rose-400 hover:text-rose-300 p-1"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))
+                        <div className="text-right">
+                          <input
+                            type="number"
+                            min="1"
+                            value={line.qty}
+                            onChange={e => {
+                              const val = parseInt(e.target.value) || 1;
+                              setLineItems(prev => prev.map((l, i) => (i === idx ? { ...l, qty: val } : l)));
+                            }}
+                            className="w-16 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-center font-mono font-bold text-emerald-400"
+                          />
+                          <div className="text-[9px] text-amber-300 font-bold mt-0.5">={totalPcs} pcs</div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveLineItem(idx)}
+                          className="text-rose-400 hover:text-rose-300 p-1"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    );
+                  })
                 )}
               </div>
 
@@ -310,10 +314,8 @@ export const DeliveryPlans: React.FC = () => {
   );
 };
 
-// Sub-component for individual plan card with item breakdown
 const DeliveryPlanCard: React.FC<{ plan: DeliveryPlan; onConfirm: () => void }> = ({ plan, onConfirm }) => {
   const lineItems = useLiveQuery(() => db.deliveryLineItems.where('delivery_plan_id').equals(plan.id!).toArray(), [plan.id]) ?? [];
-
   const isDelivered = plan.status === 'DELIVERED';
 
   return (
@@ -352,16 +354,19 @@ const DeliveryPlanCard: React.FC<{ plan: DeliveryPlan; onConfirm: () => void }> 
         )}
       </div>
 
-      {/* Item Lines */}
+      {/* Item Lines with Boxes & Total Pcs */}
       <div className="mt-3 pt-2 border-t border-slate-800/80 space-y-1">
-        {lineItems.map(line => (
-          <div key={line.id} className="flex items-center justify-between text-xs text-slate-300">
-            <span>• {line.item_name}</span>
-            <span className="font-mono font-bold text-slate-200">
-              {line.qty_planned} {line.unit}
-            </span>
-          </div>
-        ))}
+        {lineItems.map(line => {
+          const totalPcs = line.qty_planned * (line.pcs_per_box || 12);
+          return (
+            <div key={line.id} className="flex items-center justify-between text-xs text-slate-300">
+              <span>• {line.item_name}</span>
+              <span className="font-mono font-bold text-slate-200">
+                {line.qty_planned} {line.unit} <span className="text-amber-400">({totalPcs} pcs)</span>
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -22,8 +22,7 @@ export class MeatInventoryDatabase extends Dexie {
   constructor() {
     super('ProcessedMeatInventoryDB');
 
-    // Define tables & indices
-    this.version(1).stores({
+    this.version(2).stores({
       items: '++id, sku_code, name, category, current_qty',
       supplierItemCodes: '++id, item_id, supplier_code, [supplier_name+supplier_code]',
       transactions: '++id, item_id, type, created_at',
@@ -60,6 +59,33 @@ export async function logTransaction(
     source_reference: sourceReference,
     created_by: createdBy,
     created_at: new Date().toISOString(),
+  });
+}
+
+// Reset ALL inventory to ZERO (User requested feature)
+export async function resetAllInventoryToZero() {
+  return db.transaction('rw', [db.items, db.transactions], async () => {
+    const allItems = await db.items.toArray();
+    const now = new Date().toISOString();
+
+    for (const item of allItems) {
+      if (item.id && item.current_qty !== 0) {
+        const oldQty = item.current_qty;
+        await db.items.update(item.id, {
+          current_qty: 0,
+          updated_at: now,
+        });
+
+        await logTransaction(
+          item.id,
+          'STOCK_RESET',
+          -oldQty,
+          0,
+          item.latest_unit_cost,
+          `Global Inventory Reset: cleared count from ${oldQty} to 0`
+        );
+      }
+    }
   });
 }
 
@@ -152,7 +178,7 @@ export async function findMatchingItemForSupplierRow(
         return {
           matchedItemId: item.id!,
           confidence: 'exact_code',
-          matchReason: `Matched supplier code "${supplierCode}" to ${item.name} (${item.size})`,
+          matchReason: `Matched code "${supplierCode}" to ${item.name} (${item.size})`,
         };
       }
     }
@@ -169,23 +195,18 @@ export async function findMatchingItemForSupplierRow(
   for (const item of allItems) {
     const itemNameNorm = item.name.toLowerCase().replace(/[^a-z0-9]/g, '');
     const itemSizeNorm = item.size.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const itemSkuNorm = item.sku_code.toLowerCase().replace(/[^a-z0-9]/g, '');
 
     let score = 0;
-    // Check key product words
+    if (supplierCode && (itemSkuNorm === supplierCode.toLowerCase() || itemSkuNorm.includes(supplierCode.toLowerCase()))) {
+      score += 60;
+    }
     if (normalizedRawDesc.includes(itemNameNorm) || itemNameNorm.includes(normalizedRawDesc)) {
       score += 50;
     }
-
-    // Check size match
     if (normalizedSize && (normalizedSize === itemSizeNorm || normalizedRawDesc.includes(itemSizeNorm))) {
       score += 40;
     }
-
-    // Partial word overlap
-    const rawTokens = rawDescription.toLowerCase().split(/\s+/);
-    const itemTokens = item.name.toLowerCase().split(/\s+/);
-    const matches = rawTokens.filter(t => t.length > 2 && itemTokens.some(it => it.includes(t) || t.includes(it)));
-    score += matches.length * 10;
 
     if (score > highestScore && score >= 40) {
       highestScore = score;
@@ -208,149 +229,55 @@ export async function findMatchingItemForSupplierRow(
   };
 }
 
-// Seed Initial Data (Processed Meat Inventory)
+// Seed Reference Data (All Initial Quantities set to ZERO as requested)
 export async function seedDatabaseIfEmpty() {
   const count = await db.items.count();
   if (count > 0) return;
 
   const now = new Date().toISOString();
 
-  // Initial Items
+  // Initial Reference Items based on user supplier invoice photo (ALL QTY = 0)
   const itemsData: Omit<Item, 'id'>[] = [
-    {
-      sku_code: 'MEAT-HD-001',
-      name: 'CDO Classic Hotdog',
-      category: 'Hotdog',
-      unit: 'BOX',
-      size: '1KG',
-      latest_unit_cost: 185.00,
-      current_qty: 42,
-      low_stock_threshold: 15,
-      created_at: now,
-      updated_at: now,
-    },
-    {
-      sku_code: 'MEAT-HD-002',
-      name: 'Purefoods Tender Juicy Jumbo Hotdog',
-      category: 'Hotdog',
-      unit: 'BOX',
-      size: '1KG',
-      latest_unit_cost: 240.00,
-      current_qty: 12, // Low stock
-      low_stock_threshold: 20,
-      created_at: now,
-      updated_at: now,
-    },
-    {
-      sku_code: 'MEAT-TOC-001',
-      name: 'Pampanga\'s Best Sweet Pork Tocino',
-      category: 'Tocino',
-      unit: 'PACK',
-      size: '450G',
-      latest_unit_cost: 165.00,
-      current_qty: 35,
-      low_stock_threshold: 10,
-      created_at: now,
-      updated_at: now,
-    },
-    {
-      sku_code: 'MEAT-LONG-001',
-      name: 'Mekeni Garlic Skinless Longganisa',
-      category: 'Longganisa',
-      unit: 'PACK',
-      size: '500G',
-      latest_unit_cost: 145.00,
-      current_qty: 28,
-      low_stock_threshold: 10,
-      created_at: now,
-      updated_at: now,
-    },
-    {
-      sku_code: 'MEAT-BAC-001',
-      name: 'King Sue Smoked Bacon Slices',
-      category: 'Bacon',
-      unit: 'PACK',
-      size: '250G',
-      latest_unit_cost: 210.00,
-      current_qty: 8, // Low stock
-      low_stock_threshold: 15,
-      created_at: now,
-      updated_at: now,
-    },
-    {
-      sku_code: 'MEAT-HAM-001',
-      name: 'CDO Holiday Fiesta Ham',
-      category: 'Ham',
-      unit: 'BOX',
-      size: '1KG',
-      latest_unit_cost: 580.00,
-      current_qty: 18,
-      low_stock_threshold: 5,
-      created_at: now,
-      updated_at: now,
-    },
-    {
-      sku_code: 'MEAT-SAU-001',
-      name: 'Virginia Hungarian Sausage',
-      category: 'Sausage',
-      unit: 'PACK',
-      size: '500G',
-      latest_unit_cost: 225.00,
-      current_qty: 25,
-      low_stock_threshold: 10,
-      created_at: now,
-      updated_at: now,
-    },
+    { sku_code: '4460', name: 'IDOL Cdog Reg. x 24', category: 'Hotdog', unit: 'BOX', size: '250G', pcs_per_box: 24, latest_unit_cost: 1212.00, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
+    { sku_code: '4462', name: 'IDOL Cdog Jumbo x 10', category: 'Hotdog', unit: 'BOX', size: '500G', pcs_per_box: 10, latest_unit_cost: 1010.00, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
+    { sku_code: '4463', name: 'IDOL Cdog Jumbo x 12', category: 'Hotdog', unit: 'BOX', size: '1KG', pcs_per_box: 12, latest_unit_cost: 2028.00, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
+    { sku_code: '1435', name: 'Bingo Hotdog Mini FW x 24', category: 'Hotdog', unit: 'BOX', size: '250G', pcs_per_box: 24, latest_unit_cost: 792.00, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
+    { sku_code: '5105', name: 'BT Negosyo Cheesedog KS', category: 'Hotdog', unit: 'BOX', size: '1KG', pcs_per_box: 10, latest_unit_cost: 1248.00, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
+    { sku_code: '5098', name: 'BT Negosyo King-size X 16+1', category: 'Hotdog', unit: 'BOX', size: '1.1KG', pcs_per_box: 17, latest_unit_cost: 1184.00, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
+    { sku_code: '3786', name: 'BT Cheesedog Flong x 14', category: 'Hotdog', unit: 'BOX', size: '1KG', pcs_per_box: 14, latest_unit_cost: 1530.00, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
+    { sku_code: '1116', name: 'Hol. Cdog Flong x 10', category: 'Hotdog', unit: 'BOX', size: '1KG', pcs_per_box: 10, latest_unit_cost: 1570.00, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
+    { sku_code: '1118', name: 'Holiday Footlong x 14', category: 'Hotdog', unit: 'BOX', size: '1.0KG', pcs_per_box: 14, latest_unit_cost: 1570.00, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
+    { sku_code: '3176', name: 'BT Chicken Hotdog KS x 12', category: 'Hotdog', unit: 'BOX', size: '1.1KG', pcs_per_box: 12, latest_unit_cost: 1968.00, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
+    { sku_code: '4392', name: 'Cheesy Chicken Franks Jbo x 10', category: 'Sausage', unit: 'BOX', size: '500G', pcs_per_box: 10, latest_unit_cost: 1015.00, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
+    { sku_code: '474', name: 'Funtastyk YP Tocino x 36', category: 'Tocino', unit: 'BOX', size: '225G', pcs_per_box: 36, latest_unit_cost: 2196.00, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
+    { sku_code: '5009', name: 'Funtastyk Longganisa FW x 25', category: 'Longganisa', unit: 'BOX', size: '240G', pcs_per_box: 25, latest_unit_cost: 1850.00, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
+    { sku_code: '3912', name: 'Holiday Pork Siomai x 18', category: 'Siomai', unit: 'BOX', size: '240G', pcs_per_box: 18, latest_unit_cost: 756.00, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
+    { sku_code: '3913', name: 'Hol. Pork Siomai x9', category: 'Siomai', unit: 'BOX', size: '960G', pcs_per_box: 9, latest_unit_cost: 1269.00, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
+    { sku_code: '4292', name: 'Hol. Chicken Siomai x9', category: 'Siomai', unit: 'BOX', size: '960G', pcs_per_box: 9, latest_unit_cost: 1269.00, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
+    { sku_code: '4721', name: 'CDO Chicken Cripy Burger', category: 'Burger', unit: 'BOX', size: '228G', pcs_per_box: 20, latest_unit_cost: 1144.50, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
+    { sku_code: '4395', name: 'CDO Crispy Burger x 21', category: 'Burger', unit: 'BOX', size: '228G', pcs_per_box: 21, latest_unit_cost: 1123.50, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
+    { sku_code: '4979', name: 'Holiday Beef Siomai x 9', category: 'Siomai', unit: 'BOX', size: '960G', pcs_per_box: 9, latest_unit_cost: 1269.00, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
+    { sku_code: '4455', name: 'Ulam Burger C-A-P Reg.', category: 'Burger', unit: 'BOX', size: '912G', pcs_per_box: 20, latest_unit_cost: 1588.00, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
+    { sku_code: '403', name: 'Ulam Burger Reg. Bulkpack', category: 'Burger', unit: 'BOX', size: '3.04KG', pcs_per_box: 1, latest_unit_cost: 640.00, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
+    { sku_code: '5409', name: 'Savers Sweet Ham', category: 'Ham', unit: 'BOX', size: '250G', pcs_per_box: 24, latest_unit_cost: 1760.00, current_qty: 0, low_stock_threshold: 5, created_at: now, updated_at: now },
   ];
 
   const itemIds = await db.items.bulkAdd(itemsData, { allKeys: true });
 
-  // Seed Supplier Codes (Alias table)
-  await db.supplierItemCodes.bulkAdd([
-    { item_id: itemIds[0], supplier_name: 'CDO Foodsphere Inc', supplier_code: 'CDO-HD-1K', created_at: now },
-    { item_id: itemIds[1], supplier_name: 'San Miguel Foods', supplier_code: 'PF-TJ-JMB-1K', created_at: now },
-    { item_id: itemIds[2], supplier_name: 'Pampanga Best Supplier', supplier_code: 'PB-TOC-SW-450', created_at: now },
-    { item_id: itemIds[3], supplier_name: 'Mekeni Food Corp', supplier_code: 'MEK-LONG-GAR-500', created_at: now },
-  ]);
+  // Seed Aliases
+  itemsData.forEach((item, idx) => {
+    db.supplierItemCodes.add({
+      item_id: itemIds[idx],
+      supplier_name: 'CDO / Holiday / Funtastyk Supplier',
+      supplier_code: item.sku_code,
+      created_at: now,
+    });
+  });
 
   // Seed Clients
-  const clientIds = await db.clients.bulkAdd([
-    { name: 'Kiko Meat Retail Shop (Main Branch)', contact_info: '0917-555-0192', address: 'Public Market Stall #14', created_at: now },
-    { name: 'Aling Nena Store & Carinderia', contact_info: '0918-444-9921', address: 'Brgy 5, Poblacion', created_at: now },
-    { name: 'Sizzling Grill Restaurant', contact_info: '0922-888-3312', address: 'Commercial Arcade Unit 3', created_at: now },
-  ], { allKeys: true });
-
-  // Seed Initial Audit Transactions
-  await db.transactions.bulkAdd([
-    { item_id: itemIds[0], item_name: 'CDO Classic Hotdog (1KG)', type: 'MANUAL_INTAKE', qty_delta: 42, resulting_qty: 42, unit_cost_at_transaction: 185.00, reason: 'Initial inventory setup', created_at: now },
-    { item_id: itemIds[1], item_name: 'Purefoods Tender Juicy Jumbo Hotdog (1KG)', type: 'MANUAL_INTAKE', qty_delta: 12, resulting_qty: 12, unit_cost_at_transaction: 240.00, reason: 'Initial inventory setup', created_at: now },
-    { item_id: itemIds[2], item_name: 'Pampanga\'s Best Sweet Pork Tocino (450G)', type: 'MANUAL_INTAKE', qty_delta: 35, resulting_qty: 35, unit_cost_at_transaction: 165.00, reason: 'Initial inventory setup', created_at: now },
-  ]);
-
-  // Seed Back Order
-  await db.backOrders.add({
-    item_id: itemIds[1],
-    item_name: 'Purefoods Tender Juicy Jumbo Hotdog (1KG)',
-    client_id: clientIds[1],
-    client_name: 'Aling Nena Store & Carinderia',
-    qty: 10,
-    remarks: 'Awaiting supplier restocking',
-    status: 'OPEN',
-    created_at: now,
-  });
-
-  // Seed Delivery Plan
-  const planId = await db.deliveryPlans.add({
-    client_id: clientIds[0],
-    client_name: 'Kiko Meat Retail Shop (Main Branch)',
-    delivery_date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-    status: 'SCHEDULED',
-    notes: 'Morning delivery before 10 AM',
-    created_at: now,
-  });
-
-  await db.deliveryLineItems.bulkAdd([
-    { delivery_plan_id: planId, item_id: itemIds[0], item_name: 'CDO Classic Hotdog (1KG)', unit: 'BOX', qty_planned: 5, qty_delivered: 0 },
-    { delivery_plan_id: planId, item_id: itemIds[2], item_name: 'Pampanga\'s Best Sweet Pork Tocino (450G)', unit: 'PACK', qty_planned: 4, qty_delivered: 0 },
+  await db.clients.bulkAdd([
+    { name: 'Kiko Meat Retail Shop (Main)', contact_info: '0917-555-0192', address: 'Market Stall #14', created_at: now },
+    { name: 'Aling Nena Store', contact_info: '0918-444-9921', address: 'Brgy 5 Poblacion', created_at: now },
+    { name: 'Sizzling Grill Carinderia', contact_info: '0922-888-3312', address: 'Arcade Unit 3', created_at: now },
   ]);
 }

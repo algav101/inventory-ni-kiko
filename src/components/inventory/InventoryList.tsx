@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/database';
 import type { MeatCategory } from '../../types';
-import { Search, AlertTriangle, Plus } from 'lucide-react';
+import { Search, AlertTriangle, Plus, Box } from 'lucide-react';
 
 interface InventoryListProps {
   onSelectItem: (itemId: number) => void;
@@ -18,6 +18,8 @@ const CATEGORIES: ('All' | MeatCategory)[] = [
   'Ham',
   'Bacon',
   'Sausage',
+  'Siomai',
+  'Burger',
 ];
 
 export const InventoryList: React.FC<InventoryListProps> = ({
@@ -51,7 +53,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({
             <Search className="w-4 h-4 absolute left-3 top-3.5 text-slate-400" />
             <input
               type="text"
-              placeholder="Search by name, SKU, or size..."
+              placeholder="Search by code, name, size..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="w-full bg-slate-800/90 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:border-red-500"
@@ -78,7 +80,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({
             }`}
           >
             <AlertTriangle className="w-3.5 h-3.5" />
-            <span>Low Stock Only</span>
+            <span>Low Stock</span>
           </button>
 
           {CATEGORIES.map(cat => (
@@ -106,6 +108,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({
         ) : (
           filteredItems.map(item => {
             const isLowStock = item.current_qty <= item.low_stock_threshold;
+            const totalPcs = item.current_qty * (item.pcs_per_box || 1);
 
             return (
               <div
@@ -118,8 +121,8 @@ export const InventoryList: React.FC<InventoryListProps> = ({
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                        {item.sku_code}
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800/50">
+                        #{item.sku_code}
                       </span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-950/60 text-rose-300 border border-rose-800/40">
                         {item.category}
@@ -132,11 +135,12 @@ export const InventoryList: React.FC<InventoryListProps> = ({
 
                     <div className="text-xs text-slate-400 flex items-center gap-3">
                       <span>Size: <strong className="text-slate-200">{item.size}</strong></span>
-                      <span>Unit Cost: <strong className="text-slate-200">₱{item.latest_unit_cost?.toFixed(2) || '0.00'}</strong></span>
+                      <span>Pcs/Box: <strong className="text-amber-300">{item.pcs_per_box || 12}</strong></span>
+                      <span>Price: <strong className="text-slate-200">₱{item.latest_unit_cost?.toFixed(2) || '0.00'}</strong></span>
                     </div>
                   </div>
 
-                  {/* Quantity Badge */}
+                  {/* Quantity Badge & Box/Pcs calculation */}
                   <div className="text-right flex flex-col items-end justify-between">
                     <div
                       className={`px-3 py-1 rounded-xl text-center shadow-inner ${
@@ -153,12 +157,10 @@ export const InventoryList: React.FC<InventoryListProps> = ({
                       </div>
                     </div>
 
-                    {isLowStock && (
-                      <span className="text-[9px] font-bold text-amber-400 mt-1 flex items-center gap-0.5">
-                        <AlertTriangle className="w-3 h-3" />
-                        Low Stock
-                      </span>
-                    )}
+                    <div className="text-[10px] font-bold text-amber-400 mt-1 flex items-center gap-0.5">
+                      <Box className="w-3 h-3" />
+                      <span>{totalPcs} total pcs</span>
+                    </div>
                   </div>
                 </div>
               </div>

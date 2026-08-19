@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../db/database';
+import { db, resetAllInventoryToZero } from '../../db/database';
 import {
   AlertTriangle,
   FileQuestion,
@@ -11,6 +11,8 @@ import {
   History,
   PackageCheck,
   ChevronRight,
+  RotateCcw,
+  Box,
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -33,9 +35,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const lowStockItems = items.filter(i => i.current_qty <= i.low_stock_threshold);
   const totalValuation = items.reduce((acc, i) => acc + (i.current_qty * (i.latest_unit_cost || 0)), 0);
-  const totalUnitsCount = items.reduce((acc, i) => acc + i.current_qty, 0);
+  const totalBoxesCount = items.reduce((acc, i) => acc + i.current_qty, 0);
+  const totalPcsCount = items.reduce((acc, i) => acc + (i.current_qty * (i.pcs_per_box || 1)), 0);
 
   const scheduledDeliveries = deliveryPlans.filter(p => p.status === 'SCHEDULED' || p.status === 'DRAFT');
+
+  const handleGlobalResetToZero = async () => {
+    const confirmReset = window.confirm(
+      'RESET ALL INVENTORY TO 0?\n\nAre you sure you want to set the current stock of ALL items to 0? This will record an audit trail entry.'
+    );
+    if (confirmReset) {
+      await resetAllInventoryToZero();
+      alert('All item stock quantities have been reset to 0.');
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -49,8 +62,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="text-xl font-extrabold text-white mt-1">
             ₱{totalValuation.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
-          <div className="text-[11px] text-slate-400 mt-0.5">
-            {items.length} SKUs ({totalUnitsCount} units)
+          <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5">
+            <span>{items.length} SKUs</span>
+            <span>•</span>
+            <span className="text-emerald-400 font-bold flex items-center gap-0.5">
+              <Box className="w-3 h-3" />
+              {totalBoxesCount} BOXES ({totalPcsCount} pcs)
+            </span>
           </div>
         </div>
 
@@ -63,7 +81,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             {openBackorders.length} Orders
           </div>
           <div className="text-[11px] text-slate-400 mt-0.5">
-            {openBackorders.reduce((a, b) => a + b.qty, 0)} items requested
+            {openBackorders.reduce((a, b) => a + b.qty, 0)} boxes requested
           </div>
         </div>
       </div>
@@ -94,11 +112,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
               >
                 <div>
                   <div className="font-semibold text-xs text-slate-200">{item.name}</div>
-                  <div className="text-[11px] text-slate-400">{item.category} • {item.size}</div>
+                  <div className="text-[11px] text-slate-400">{item.category} • {item.size} • {item.pcs_per_box || 12} pcs/box</div>
                 </div>
                 <div className="text-right">
                   <div className="font-bold text-xs text-amber-400">{item.current_qty} {item.unit}</div>
-                  <div className="text-[10px] text-slate-500">Threshold: {item.low_stock_threshold}</div>
+                  <div className="text-[10px] text-slate-500">({item.current_qty * (item.pcs_per_box || 1)} total pcs)</div>
                 </div>
               </div>
             ))}
@@ -108,9 +126,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* Quick Action Grid */}
       <div className="space-y-2">
-        <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">
-          Quick Warehouse Actions
-        </h2>
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+            Quick Warehouse Actions
+          </h2>
+          <button
+            onClick={handleGlobalResetToZero}
+            className="text-[11px] font-bold text-rose-400 hover:underline flex items-center gap-1"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Reset Inventory to 0</span>
+          </button>
+        </div>
+
         <div className="grid grid-cols-2 gap-2.5">
           <button
             onClick={() => setActiveTab('ocr_intake')}

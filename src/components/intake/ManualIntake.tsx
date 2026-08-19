@@ -15,6 +15,8 @@ const CATEGORIES: MeatCategory[] = [
   'Ham',
   'Bacon',
   'Sausage',
+  'Siomai',
+  'Burger',
   'Other',
 ];
 
@@ -24,9 +26,10 @@ export const ManualIntake: React.FC<ManualIntakeProps> = ({ onBack, onFinished }
   const [category, setCategory] = useState<MeatCategory>('Hotdog');
   const [unit, setUnit] = useState('BOX');
   const [size, setSize] = useState('1KG');
+  const [pcsPerBox, setPcsPerBox] = useState('12');
   const [unitCost, setUnitCost] = useState('');
-  const [initialQty, setInitialQty] = useState('10');
-  const [threshold, setThreshold] = useState('10');
+  const [initialQty, setInitialQty] = useState('0'); // Default to 0
+  const [threshold, setThreshold] = useState('5');
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -38,23 +41,22 @@ export const ManualIntake: React.FC<ManualIntakeProps> = ({ onBack, onFinished }
       return;
     }
 
-    // Auto-generate SKU code if left empty
     let finalSku = skuCode.trim().toUpperCase();
     if (!finalSku) {
       const prefix = category.slice(0, 3).toUpperCase();
       finalSku = `MEAT-${prefix}-${Math.floor(1000 + Math.random() * 9000)}`;
     }
 
-    // Check SKU duplicate
     const existing = await db.items.where('sku_code').equals(finalSku).first();
     if (existing) {
-      setErrorMsg(`SKU code "${finalSku}" already exists in inventory.`);
+      setErrorMsg(`SKU / Supplier Code "${finalSku}" already exists.`);
       return;
     }
 
     const qty = parseFloat(initialQty) || 0;
     const cost = unitCost ? parseFloat(unitCost) : null;
-    const lowThresh = parseFloat(threshold) || 10;
+    const lowThresh = parseFloat(threshold) || 5;
+    const pcsBoxNum = parseInt(pcsPerBox) || 12;
     const now = new Date().toISOString();
 
     const itemId = await db.items.add({
@@ -63,6 +65,7 @@ export const ManualIntake: React.FC<ManualIntakeProps> = ({ onBack, onFinished }
       category,
       unit: unit.toUpperCase(),
       size: size.toUpperCase(),
+      pcs_per_box: pcsBoxNum,
       latest_unit_cost: cost,
       current_qty: qty,
       low_stock_threshold: lowThresh,
@@ -77,7 +80,7 @@ export const ManualIntake: React.FC<ManualIntakeProps> = ({ onBack, onFinished }
         qty,
         qty,
         cost,
-        'Manual new SKU creation with initial stock'
+        `Manual SKU creation (+${qty} ${unit} = ${qty * pcsBoxNum} pcs)`
       );
     }
 
@@ -109,18 +112,18 @@ export const ManualIntake: React.FC<ManualIntakeProps> = ({ onBack, onFinished }
         <form onSubmit={handleCreate} className="space-y-3.5">
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">SKU Code (Optional)</label>
+              <label className="block font-semibold text-slate-300 mb-1">Code / SKU #</label>
               <input
                 type="text"
-                placeholder="Auto-generated if empty"
+                placeholder="e.g. 4460, 5105"
                 value={skuCode}
                 onChange={e => setSkuCode(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono uppercase"
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono uppercase font-bold"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Meat Category</label>
+              <label className="block font-semibold text-slate-300 mb-1">Category</label>
               <select
                 value={category}
                 onChange={e => setCategory(e.target.value as MeatCategory)}
@@ -134,10 +137,10 @@ export const ManualIntake: React.FC<ManualIntakeProps> = ({ onBack, onFinished }
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Item Description / Product Name *</label>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">Product Description *</label>
             <input
               type="text"
-              placeholder="e.g. CDO Classic Hotdog 1kg"
+              placeholder="e.g. IDOL Cdog Reg. x 24"
               value={name}
               onChange={e => setName(e.target.value)}
               className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-bold"
@@ -145,32 +148,43 @@ export const ManualIntake: React.FC<ManualIntakeProps> = ({ onBack, onFinished }
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3 text-xs">
+          <div className="grid grid-cols-3 gap-2 text-xs">
             <div>
               <label className="block font-semibold text-slate-300 mb-1">Package Size</label>
               <input
                 type="text"
-                placeholder="e.g. 1KG, 500G, 450G"
+                placeholder="250G, 1KG"
                 value={size}
                 onChange={e => setSize(e.target.value)}
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white uppercase"
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Unit of Measure</label>
+              <label className="block font-semibold text-slate-300 mb-1">Unit</label>
               <input
                 type="text"
-                placeholder="BOX, PACK, KG"
+                placeholder="BOX"
                 value={unit}
                 onChange={e => setUnit(e.target.value)}
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white uppercase"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-amber-300 mb-1">Pcs per Box</label>
+              <input
+                type="number"
+                min="1"
+                placeholder="24"
+                value={pcsPerBox}
+                onChange={e => setPcsPerBox(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-amber-300 font-mono font-bold"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Initial Qty</label>
+              <label className="block font-semibold text-slate-300 mb-1">Initial Qty (Boxes)</label>
               <input
                 type="number"
                 min="0"
@@ -180,12 +194,12 @@ export const ManualIntake: React.FC<ManualIntakeProps> = ({ onBack, onFinished }
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Unit Cost ₱</label>
+              <label className="block font-semibold text-slate-300 mb-1">Unit Price ₱</label>
               <input
                 type="number"
                 step="0.01"
                 min="0"
-                placeholder="185.00"
+                placeholder="1,212.00"
                 value={unitCost}
                 onChange={e => setUnitCost(e.target.value)}
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono"

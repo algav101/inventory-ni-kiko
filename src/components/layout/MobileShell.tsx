@@ -7,9 +7,10 @@ import {
   ScanLine,
   PackageCheck,
   AlertTriangle,
+  RotateCcw,
 } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../db/database';
+import { db, resetAllInventoryToZero } from '../../db/database';
 
 interface MobileShellProps {
   children: React.ReactNode;
@@ -24,7 +25,6 @@ export const MobileShell: React.FC<MobileShellProps> = ({
   setActiveTab,
   onOpenReceiveModal,
 }) => {
-  // Count low stock items & open backorders for header badges
   const lowStockCount = useLiveQuery(async () => {
     const items = await db.items.toArray();
     return items.filter(i => i.current_qty <= i.low_stock_threshold).length;
@@ -33,6 +33,16 @@ export const MobileShell: React.FC<MobileShellProps> = ({
   const openBoCount = useLiveQuery(async () => {
     return db.backOrders.where('status').equals('OPEN').count();
   }) ?? 0;
+
+  const handleGlobalResetToZero = async () => {
+    const confirmReset = window.confirm(
+      'RESET ALL INVENTORY TO 0?\n\nAre you sure you want to set the current stock of ALL items to 0? This will record an audit trail entry.'
+    );
+    if (confirmReset) {
+      await resetAllInventoryToZero();
+      alert('All item stock quantities have been reset to 0.');
+    }
+  };
 
   return (
     <div className="mobile-shell-container text-slate-100">
@@ -57,10 +67,19 @@ export const MobileShell: React.FC<MobileShellProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleGlobalResetToZero}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-950/60 border border-rose-800/60 text-rose-300 hover:bg-rose-900 text-xs font-bold transition-all"
+              title="Reset all inventory counts to 0"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset to 0</span>
+            </button>
+
             {lowStockCount > 0 && (
               <button
                 onClick={() => setActiveTab('inventory')}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold"
+                className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold"
                 title={`${lowStockCount} items below threshold`}
               >
                 <AlertTriangle className="w-3.5 h-3.5" />

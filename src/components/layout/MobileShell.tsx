@@ -50,9 +50,11 @@ export const MobileShell: React.FC<MobileShellProps> = ({
       <header className="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-red-600 flex items-center justify-center font-bold text-white shadow-lg shadow-red-900/40">
-              🥩
-            </div>
+            <img
+              src="/kiko-avatar.jpg"
+              alt="Kiko Avatar"
+              className="w-10 h-10 rounded-full object-cover border-2 border-amber-400 shadow-md shadow-amber-500/20"
+            />
             <div>
               <h1 className="font-bold text-base tracking-tight leading-none text-white">
                 Kiko palit 2x2 App

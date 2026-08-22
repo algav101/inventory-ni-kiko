@@ -20,6 +20,7 @@ const CATEGORIES: ('All' | MeatCategory)[] = [
   'Sausage',
   'Siomai',
   'Burger',
+  'Other',
 ];
 
 export const InventoryList: React.FC<InventoryListProps> = ({
@@ -33,6 +34,14 @@ export const InventoryList: React.FC<InventoryListProps> = ({
   const [filterLowStockOnly, setFilterLowStockOnly] = useState(false);
 
   const items = useLiveQuery(() => db.items.toArray()) ?? [];
+
+  // Compute dynamic list of all unique categories present in items + standard categories
+  const dynamicCategories = Array.from(
+    new Set([
+      ...CATEGORIES,
+      ...items.map(item => item.category)
+    ])
+  ).filter(Boolean) as ('All' | MeatCategory)[];
 
   // Compute dynamic list of all unique stock rooms / freezers (default + any newly created custom locations)
   const dynamicLocations = Array.from(
@@ -131,7 +140,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({
             <span>Low Stock</span>
           </button>
 
-          {CATEGORIES.map(cat => (
+          {dynamicCategories.map(cat => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}

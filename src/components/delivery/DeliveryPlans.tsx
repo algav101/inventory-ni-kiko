@@ -8,7 +8,9 @@ import {
   CheckCircle,
   Calendar,
   X,
+  RotateCcw,
 } from 'lucide-react';
+
 
 interface LineItemFormState {
   itemId: number;
@@ -215,6 +217,19 @@ export const DeliveryPlans: React.FC = () => {
     });
   };
 
+  const handleResetAllDeliveryPlans = async () => {
+    const confirmReset = window.confirm(
+      'RESET ALL DELIVERY PLANS & SCHEDULES TO 0?\n\nAre you sure you want to clear all scheduled and fulfilled delivery plans? This action will reset delivery schedule data to 0.'
+    );
+    if (confirmReset) {
+      await db.transaction('rw', [db.deliveryPlans, db.deliveryLineItems], async () => {
+        await db.deliveryPlans.clear();
+        await db.deliveryLineItems.clear();
+      });
+      alert('All delivery plans & schedule data have been reset to 0.');
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Title & Action Header */}
@@ -224,14 +239,26 @@ export const DeliveryPlans: React.FC = () => {
           <span className="font-extrabold tracking-wide">Delivery Plans & Fulfillment</span>
         </div>
 
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="btn-touch bg-amber-600 hover:bg-amber-500 text-white rounded-xl px-3 py-2 text-xs font-bold shrink-0 flex items-center gap-1 shadow-md"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Delivery</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleResetAllDeliveryPlans}
+            className="btn-touch bg-rose-600/90 hover:bg-rose-600 text-white rounded-xl px-2.5 py-2 text-xs font-bold shrink-0 flex items-center gap-1 shadow-md"
+            title="Reset Delivery Schedule Data to 0"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Reset Schedule</span>
+          </button>
+
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="btn-touch bg-amber-600 hover:bg-amber-500 text-white rounded-xl px-3 py-2 text-xs font-bold shrink-0 flex items-center gap-1 shadow-md"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Delivery</span>
+          </button>
+        </div>
       </div>
+
 
 
       {/* Plans List */}

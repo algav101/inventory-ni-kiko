@@ -5,8 +5,8 @@ import {
   Truck,
   FileQuestion,
   ScanLine,
-  Sun,
-  Moon,
+  Glasses,
+  Eye,
 } from 'lucide-react';
 
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -48,28 +48,32 @@ export const MobileShell: React.FC<MobileShellProps> = ({
       {/* Streamlined Header Bar with Top-Left Theme Toggle and Domain Master AL Branding */}
       <header className={`sticky top-0 z-30 ${isDarkMode ? 'bg-[#06121c] text-white' : 'bg-[#0b2b3c] text-white'} shadow-xl border-b ${isDarkMode ? 'border-[#0f2434]' : 'border-[#133e54]'} transition-colors duration-400`}>
         <div className="flex items-center justify-between px-3.5 py-3">
-          {/* Top Left Interface: Eye-Comfort Dark/Light Theme Toggle Switch */}
+          {/* Top Left Interface: Black Sunglasses (Dark) vs 2 Naked Eyes (Light) Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className={`eye-shade-toggle flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border ${
+            className={`eye-shade-toggle flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${
               isDarkMode
-                ? 'bg-slate-800/90 border-amber-500/40 text-amber-400 hover:bg-slate-700'
-                : 'bg-white/15 border-white/30 text-sky-200 hover:bg-white/25'
+                ? 'bg-slate-900/90 border-slate-700 text-slate-100 hover:border-slate-500'
+                : 'bg-amber-500/20 border-amber-300/80 text-amber-100 hover:bg-amber-500/30'
             } shadow-md transition-all text-xs font-bold`}
-            title={isDarkMode ? 'Switch to Light Mode (Eye Shade)' : 'Switch to Dark Mode (Eye Shade)'}
+            title={isDarkMode ? 'Dark Mode (Black Sunglasses) - Click for Light Mode (Naked Eyes)' : 'Light Mode (2 Naked Eyes) - Click for Dark Mode (Black Sunglasses)'}
           >
             {isDarkMode ? (
               <>
-                <Sun className="w-4 h-4 text-amber-400 animate-spin-slow" />
-                <span className="text-[10px] uppercase tracking-wider font-extrabold text-amber-300">Light</span>
+                <Glasses className="w-4 h-4 text-slate-100 fill-slate-900" />
+                <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-200">DARK</span>
               </>
             ) : (
               <>
-                <Moon className="w-4 h-4 text-sky-300" />
-                <span className="text-[10px] uppercase tracking-wider font-extrabold text-sky-200">Dark</span>
+                <div className="flex items-center -space-x-1">
+                  <Eye className="w-3.5 h-3.5 text-amber-300 stroke-[2.5]" />
+                  <Eye className="w-3.5 h-3.5 text-amber-300 stroke-[2.5]" />
+                </div>
+                <span className="text-[10px] uppercase tracking-wider font-extrabold text-amber-200">LIGHT</span>
               </>
             )}
           </button>
+
 
           {/* App Title with Domain Master AL Logo & Cursive Subtitle */}
           <div className="flex items-center gap-2">

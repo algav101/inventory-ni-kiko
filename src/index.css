@@ -35,6 +35,43 @@
   transition: background-color 0.4s ease-in-out, color 0.4s ease-in-out;
 }
 
+/* Light Mode Contrast Overrides */
+.mobile-shell-container:not(.dark-mode) {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.mobile-shell-container:not(.dark-mode) main {
+  background: #f1f5f9 !important;
+}
+
+.mobile-shell-container:not(.dark-mode) .bg-white {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.mobile-shell-container:not(.dark-mode) .text-slate-900,
+.mobile-shell-container:not(.dark-mode) .text-slate-800,
+.mobile-shell-container:not(.dark-mode) .text-slate-700 {
+  color: #0f172a !important;
+}
+
+.mobile-shell-container:not(.dark-mode) .text-slate-500,
+.mobile-shell-container:not(.dark-mode) .text-slate-600 {
+  color: #334155 !important;
+}
+
+.mobile-shell-container:not(.dark-mode) .text-slate-400 {
+  color: #475569 !important;
+}
+
+.mobile-shell-container:not(.dark-mode) .bg-slate-50 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Dark Mode Contrast Overrides */
 .mobile-shell-container.dark-mode {
   background: #091724;
   color: #f1f5f9;
@@ -65,6 +102,7 @@
   background-color: #0b1d2c !important;
   border-color: #1a354b !important;
 }
+
 
 @media (min-width: 640px) {
   .mobile-shell-container {

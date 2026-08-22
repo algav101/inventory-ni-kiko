@@ -99,12 +99,14 @@ export interface BackOrder {
   client_name?: string;
   qty: number;
   pcs_per_box?: number;
+  unit_price?: number;
   remarks: string;
   status: BackOrderStatus;
   created_at: string;
   fulfilled_at?: string | null;
   linked_delivery_id?: number | null;
 }
+
 
 export interface ParsedOcrRow {
   id: string;

@@ -130,11 +130,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
         )}
       </div>
 
+
       {/* 2. Scheduled Delivery Day Progress: Delivered vs Undelivered Toggle Button */}
+
       <div className="bg-white rounded-2xl border border-slate-300 shadow-sm overflow-hidden">
         <button
           onClick={() => setIsDeliveryProgressOpen(!isDeliveryProgressOpen)}
-          className="w-full flex items-center justify-between p-3.5 bg-blue-900 text-white font-bold hover:bg-blue-950 transition-all"
+          className="w-full flex items-center justify-between p-3.5 bg-blue-900 text-white-force font-bold hover:bg-blue-950 transition-all"
         >
           <div className="flex items-center gap-2">
             <Truck className="w-5 h-5 text-blue-300" />
@@ -142,15 +144,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <span className="text-xs text-blue-200 font-extrabold uppercase tracking-wider block">
                 Scheduled Delivery Day Performance
               </span>
-              <span className="text-sm font-black text-white">
+              <span className="text-sm font-black text-white-force">
                 Delivered ({deliveredLineItems.length}) vs Undelivered ({undeliveredLineItems.length})
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-1 text-xs text-blue-200 font-bold px-2 py-1 rounded-lg bg-white/10 border border-white/20">
-            <span>{isDeliveryProgressOpen ? 'Hide' : 'View Details'}</span>
-            {isDeliveryProgressOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <span className="text-white-force">{isDeliveryProgressOpen ? 'Hide' : 'View Details'}</span>
+            {isDeliveryProgressOpen ? <ChevronUp className="w-4 h-4 text-white-force" /> : <ChevronDown className="w-4 h-4 text-white-force" />}
           </div>
         </button>
 
@@ -202,24 +204,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* 3. Low Stocks Dropdown Section */}
-      <div className="bg-amber-50 rounded-2xl border border-amber-300 shadow-sm overflow-hidden">
+      <div className="rounded-2xl border border-amber-400 shadow-sm overflow-hidden">
         <button
           onClick={() => setIsLowStockOpen(!isLowStockOpen)}
-          className="w-full flex items-center justify-between p-3.5 bg-amber-100/60 text-slate-900 font-bold text-sm hover:bg-amber-100 transition-all"
+          className="w-full flex items-center justify-between p-3.5 bg-amber-500 text-slate-950 font-black text-sm hover:bg-amber-400 transition-all shadow-xs"
         >
           <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-600" />
-            <span>Low Stocks ({lowOrZeroStockItems.length})</span>
+            <AlertTriangle className="w-4 h-4 text-slate-950" />
+            <span className="font-extrabold">Low Stocks ({lowOrZeroStockItems.length})</span>
           </div>
-          <div className="flex items-center gap-1 text-xs text-slate-900 font-bold">
+          <div className="flex items-center gap-1 text-xs text-slate-950 font-bold px-2 py-1 rounded bg-black/10">
             <span>{isLowStockOpen ? 'Hide' : 'Show Details'}</span>
             {isLowStockOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </div>
         </button>
 
-
         {isLowStockOpen && (
-          <div className="p-3.5 space-y-2 border-t border-amber-200/60">
+          <div className="p-3.5 space-y-2 bg-amber-50/50 border-t border-amber-200">
             {lowOrZeroStockItems.length === 0 ? (
               <div className="text-center py-2 text-xs text-amber-800 font-medium">
                 All inventory items are currently well-stocked.
@@ -259,22 +260,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="bg-white rounded-2xl border border-slate-300 shadow-md overflow-hidden">
         <button
           onClick={() => setIsManageInventoryOpen(!isManageInventoryOpen)}
-          className="w-full flex items-center justify-between p-4 bg-[#0b2b3c] text-white font-black text-sm tracking-wide uppercase hover:bg-[#0f374c] transition-all"
+          className="w-full flex items-center justify-between p-4 bg-[#0b2b3c] text-white-force font-black text-sm tracking-wide uppercase hover:bg-[#0f374c] transition-all"
         >
           <div className="flex items-center gap-2">
             <SlidersHorizontal className="w-4 h-4 text-[#ff6b00]" />
-            <span>MANAGE INVENTORY</span>
+            <span className="text-white-force font-black">MANAGE INVENTORY</span>
           </div>
           <div className="flex items-center gap-1 text-xs text-blue-200 font-bold">
             <span>{isManageInventoryOpen ? 'Collapse Menu' : 'Expand Menu'}</span>
-            {isManageInventoryOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {isManageInventoryOpen ? <ChevronUp className="w-4 h-4 text-white-force" /> : <ChevronDown className="w-4 h-4 text-white-force" />}
           </div>
         </button>
 
         {isManageInventoryOpen && (
           <div className="p-4 space-y-4 bg-slate-50 border-t border-slate-200">
             {/* Bad Items Returned Toggle Button inside Manage Inventory Menu */}
-            <div className="bg-purple-900 text-white rounded-xl border border-purple-800 overflow-hidden shadow-xs">
+            <div className="bg-purple-900 text-white-force rounded-xl border border-purple-800 overflow-hidden shadow-xs">
               <button
                 onClick={() => setIsBadOrdersMenuOpen(!isBadOrdersMenuOpen)}
                 className="w-full flex items-center justify-between p-3.5 hover:bg-purple-950 transition-all"
@@ -285,19 +286,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <span className="text-xs text-purple-200 font-extrabold uppercase tracking-wider block">
                       Bad Items Returned (Bad Orders)
                     </span>
-                    <span className="text-sm font-black text-white">
+                    <span className="text-sm font-black text-white-force">
                       {openBackorders.length} Bad Orders ({openBackorders.reduce((a, b) => a + b.qty, 0)} boxes to replace)
                     </span>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1 text-xs text-purple-200 font-bold px-2 py-1 rounded bg-white/10 border border-white/20">
-                  <span>{isBadOrdersMenuOpen ? 'Hide' : 'Show Details'}</span>
-                  {isBadOrdersMenuOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  <span className="text-white-force">{isBadOrdersMenuOpen ? 'Hide' : 'Show Details'}</span>
+                  {isBadOrdersMenuOpen ? <ChevronUp className="w-4 h-4 text-white-force" /> : <ChevronDown className="w-4 h-4 text-white-force" />}
                 </div>
               </button>
 
               {isBadOrdersMenuOpen && (
+
 
                 <div className="p-3 bg-purple-950/90 space-y-2 border-t border-purple-800 text-xs">
                   {openBackorders.length === 0 ? (

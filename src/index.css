@@ -65,9 +65,14 @@
 }
 
 /* Light mode text contrast fixes */
-.mobile-shell-container:not(.dark-mode) .text-white {
+.text-white-force {
+  color: #ffffff !important;
+}
+
+.mobile-shell-container:not(.dark-mode) .text-white:not(.text-white-force) {
   color: #0b2b3c !important;
 }
+
 
 .mobile-shell-container:not(.dark-mode) .text-slate-100,
 .mobile-shell-container:not(.dark-mode) .text-slate-200,

@@ -1,17 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   LayoutDashboard,
   Boxes,
   Truck,
   FileQuestion,
   ScanLine,
-  Menu,
-  Network,
-  MapPin,
-  X,
-  RotateCcw,
-  History,
+  Sun,
+  Moon,
 } from 'lucide-react';
+
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/database';
 import type { Item } from '../../types';
@@ -29,23 +26,9 @@ export const MobileShell: React.FC<MobileShellProps> = ({
   activeTab,
   setActiveTab,
 }) => {
-
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [showToast, setShowToast] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState<string>('');
-
-  // Live ISO Timestamp formatted like 2021-10-05T08:45:46 in reference picture
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      const isoStr = now.toISOString().split('.')[0]; // YYYY-MM-DDTHH:mm:ss
-      setCurrentTime(isoStr);
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   const lowStockCount = useLiveQuery(async () => {
     const items = await db.items.toArray();
@@ -56,194 +39,71 @@ export const MobileShell: React.FC<MobileShellProps> = ({
     return db.backOrders.where('status').equals('OPEN').count();
   }) ?? 0;
 
-  const handleGlobalResetToZero = () => {
-    setIsResetModalOpen(true);
-    setIsDrawerOpen(false);
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
   };
 
   return (
-    <div className="mobile-shell-container text-slate-800">
-      {/* Dark Navy Reference Header */}
-      <header className="sticky top-0 z-30 bg-[#0b2b3c] text-white shadow-lg border-b border-[#133e54]">
-        {/* Top Control Bar: Hamburger, Timestamp, Sync Globe */}
-        <div className="flex items-center justify-between px-3.5 pt-2.5 pb-1 text-slate-200">
+    <div className={`mobile-shell-container ${isDarkMode ? 'dark-mode' : ''}`}>
+      {/* Streamlined Header Bar with Top-Left Theme Toggle and Domain Master AL Branding */}
+      <header className={`sticky top-0 z-30 ${isDarkMode ? 'bg-[#06121c] text-white' : 'bg-[#0b2b3c] text-white'} shadow-xl border-b ${isDarkMode ? 'border-[#0f2434]' : 'border-[#133e54]'} transition-colors duration-400`}>
+        <div className="flex items-center justify-between px-3.5 py-3">
+          {/* Top Left Interface: Eye-Comfort Dark/Light Theme Toggle Switch */}
+          <button
+            onClick={toggleTheme}
+            className={`eye-shade-toggle flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border ${
+              isDarkMode
+                ? 'bg-slate-800/90 border-amber-500/40 text-amber-400 hover:bg-slate-700'
+                : 'bg-white/15 border-white/30 text-sky-200 hover:bg-white/25'
+            } shadow-md transition-all text-xs font-bold`}
+            title={isDarkMode ? 'Switch to Light Mode (Eye Shade)' : 'Switch to Dark Mode (Eye Shade)'}
+          >
+            {isDarkMode ? (
+              <>
+                <Sun className="w-4 h-4 text-amber-400 animate-spin-slow" />
+                <span className="text-[10px] uppercase tracking-wider font-extrabold text-amber-300">Light</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-4 h-4 text-sky-300" />
+                <span className="text-[10px] uppercase tracking-wider font-extrabold text-sky-200">Dark</span>
+              </>
+            )}
+          </button>
+
+          {/* App Title with Domain Master AL Logo & Cursive Subtitle */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-              className="p-1 rounded-md hover:bg-white/10 active:scale-95 transition-all text-white"
-              title="Open Menu"
-            >
-              <Menu className="w-5 h-5 stroke-[2.5]" />
-            </button>
-            <span className="font-bold text-sm text-white tracking-tight">Kiko Machine</span>
+            {/* Uploaded Domain Master AL Emblem Logo */}
+            <img
+              src="/domain-master-al-logo.jpg"
+              alt="Domain Master AL Logo"
+              className="w-9 h-9 rounded-full object-cover border-2 border-amber-500/60 shadow-lg shadow-amber-500/20"
+            />
+
+            <div className="text-left">
+              <div className="flex items-baseline gap-1.5 leading-none">
+                <span className="font-black text-sm sm:text-base text-white tracking-tight">
+                  Kiko Machine
+                </span>
+                <span className="font-serif italic font-normal text-[11px] sm:text-xs text-[#ff6b00] tracking-wide opacity-95">
+                  by Domain Master AL
+                </span>
+              </div>
+            </div>
           </div>
 
-          {/* Timestamp string matching reference: 2021-10-05T08:45:46 */}
-          <div className="font-mono text-xs sm:text-sm font-semibold tracking-wider text-slate-100">
-            {currentTime || '2026-08-22T15:48:00'}
-          </div>
-
-          <div className="flex items-center gap-1.5 text-blue-300">
-            <button
-              onClick={handleGlobalResetToZero}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-950/80 border border-rose-800 text-rose-300 hover:bg-rose-900 text-[11px] font-bold transition-all shadow-sm"
-              title="Reset all inventory counts to 0"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span> Inventory Reset </span>
-            </button>
-          </div>
-        </div>
-
-        {/* User Greeting Bar */}
-        <div className="px-4 pt-1 pb-1">
-          <h1 className="text-sm sm:text-base font-black tracking-wide uppercase text-white flex items-center gap-1.5">
-            WELCOME BACK, <span className="text-[#ff6b00]">ADMIN</span>
-          </h1>
-        </div>
-
-        {/* Sub-info Row: Terminal Tag & Storage Location */}
-        <div className="flex items-center justify-between px-4 pb-2.5 pt-0.5 text-[11px] font-bold tracking-wide">
-          <div className="flex items-center gap-1 text-slate-300 underline decoration-slate-400">
-            <Network className="w-3.5 h-3.5 text-blue-400" />
-            <span>T10.9</span>
-          </div>
-
-          <div className="flex items-center gap-1 text-[#ff6b00] underline decoration-[#ff6b00] cursor-pointer">
-            <MapPin className="w-3.5 h-3.5 text-[#ff6b00]" />
-            <span>031HCM COLDSTORAGE</span>
-          </div>
+          {/* Clean Top Right Accent */}
+          <div className="w-6"></div>
         </div>
       </header>
 
-      {/* Slide-out Drawer Navigation */}
-      {isDrawerOpen && (
-        <div className="fixed inset-0 z-50 flex">
-          <div
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"
-            onClick={() => setIsDrawerOpen(false)}
-          />
-          <div className="relative z-10 w-72 max-w-[80%] bg-[#0b2b3c] text-white p-5 flex flex-col justify-between shadow-2xl">
-            <div>
-              <div className="flex items-center justify-between pb-4 border-b border-slate-700/60 mb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-full bg-[#ff6b00] text-white flex items-center justify-center font-black text-sm">
-                    K
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm text-white">Kiko Machine</h3>
-                    <p className="text-[11px] text-slate-300">Admin Terminal • Coldstorage</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setIsDrawerOpen(false)}
-                  className="p-1 rounded-lg hover:bg-white/10 text-slate-300"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="space-y-1.5 text-sm font-semibold">
-                <button
-                  onClick={() => {
-                    setActiveTab('dashboard');
-                    setIsDrawerOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
-                    activeTab === 'dashboard' ? 'bg-[#ff6b00] text-white font-bold' : 'hover:bg-white/10 text-slate-200'
-                  }`}
-                >
-                  <LayoutDashboard className="w-4 h-4" />
-                  <span>Dashboard Home</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setActiveTab('inventory');
-                    setIsDrawerOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
-                    activeTab === 'inventory' ? 'bg-[#ff6b00] text-white font-bold' : 'hover:bg-white/10 text-slate-200'
-                  }`}
-                >
-                  <Boxes className="w-4 h-4" />
-                  <span>Stock List</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setActiveTab('ocr_intake');
-                    setIsDrawerOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
-                    activeTab === 'ocr_intake' ? 'bg-[#ff6b00] text-white font-bold' : 'hover:bg-white/10 text-slate-200'
-                  }`}
-                >
-                  <ScanLine className="w-4 h-4" />
-                  <span>Auto Add Stocks</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setActiveTab('delivery');
-                    setIsDrawerOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
-                    activeTab === 'delivery' ? 'bg-[#ff6b00] text-white font-bold' : 'hover:bg-white/10 text-slate-200'
-                  }`}
-                >
-                  <Truck className="w-4 h-4" />
-                  <span>Set up Delivery Schedule</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setActiveTab('backorder');
-                    setIsDrawerOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
-                    activeTab === 'backorder' ? 'bg-[#ff6b00] text-white font-bold' : 'hover:bg-white/10 text-slate-200'
-                  }`}
-                >
-                  <FileQuestion className="w-4 h-4" />
-                  <span>Returned Items</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setActiveTab('history');
-                    setIsDrawerOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
-                    activeTab === 'history' ? 'bg-[#ff6b00] text-white font-bold' : 'hover:bg-white/10 text-slate-200'
-                  }`}
-                >
-                  <History className="w-4 h-4" />
-                  <span>Audit Trail Log</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-slate-700/60 space-y-2">
-              <button
-                onClick={handleGlobalResetToZero}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-rose-950/80 border border-rose-800 text-rose-300 hover:bg-rose-900 font-bold text-xs transition-all"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span> Inventory Reset </span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Main Screen Content View */}
-      <main className="flex-1 overflow-y-auto pb-24 p-4 bg-[#f1f5f9]">
+      <main className="flex-1 overflow-y-auto pb-24 p-4">
         {children}
       </main>
 
       {/* Bottom Floating Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 max-w-[480px] mx-auto bg-[#0b2b3c] backdrop-blur-lg border-t border-[#133e54] px-2 py-2 shadow-2xl">
+      <nav className={`fixed bottom-0 left-0 right-0 z-30 max-w-[480px] mx-auto ${isDarkMode ? 'bg-[#06121c]' : 'bg-[#0b2b3c]'} backdrop-blur-lg border-t ${isDarkMode ? 'border-[#0f2434]' : 'border-[#133e54]'} px-2 py-2 shadow-2xl transition-colors duration-400`}>
         <div className="grid grid-cols-5 gap-1 text-center">
           <button
             onClick={() => setActiveTab('dashboard')}
@@ -330,4 +190,5 @@ export const MobileShell: React.FC<MobileShellProps> = ({
     </div>
   );
 };
+
 

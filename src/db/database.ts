@@ -264,9 +264,25 @@ export async function findMatchingItemForSupplierRow(
   confidence: 'exact_code' | 'fuzzy_desc' | 'none';
   matchReason: string;
 }> {
-  // 1. Check SupplierItemCode alias table
+  // 1. Direct SKU Code or SupplierItemCode alias table check
   if (supplierCode) {
     const cleanCode = supplierCode.trim().toUpperCase();
+
+    // Check direct match on items table sku_code
+    const directItem = await db.items
+      .where('sku_code')
+      .equals(cleanCode)
+      .first();
+
+    if (directItem && directItem.id) {
+      return {
+        matchedItemId: directItem.id,
+        confidence: 'exact_code',
+        matchReason: `Exact matched SKU "${cleanCode}" to ${directItem.name} (${directItem.size})`,
+      };
+    }
+
+    // Check alias table
     const alias = await db.supplierItemCodes
       .where('supplier_code')
       .equals(cleanCode)
@@ -278,7 +294,7 @@ export async function findMatchingItemForSupplierRow(
         return {
           matchedItemId: item.id!,
           confidence: 'exact_code',
-          matchReason: `Matched code "${supplierCode}" to ${item.name} (${item.size})`,
+          matchReason: `Matched alias code "${supplierCode}" to ${item.name} (${item.size})`,
         };
       }
     }

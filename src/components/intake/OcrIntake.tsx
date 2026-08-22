@@ -72,7 +72,7 @@ GRAND TOTAL: 16,475.00
   },
 ];
 
-// Helper: Image Pre-processing for Canvas (enhances contrast & sharpens text for high-line OCR)
+// Helper: Image Pre-processing for Canvas (enhances contrast & sharpens text without pixel clipping)
 function preprocessImageToCanvas(imageElement: HTMLImageElement): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -86,13 +86,20 @@ function preprocessImageToCanvas(imageElement: HTMLImageElement): HTMLCanvasElem
   const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const data = imgData.data;
 
-  // High contrast & binarization filter
+  // High contrast grayscale enhancement preserving small numbers & size text
   for (let i = 0; i < data.length; i += 4) {
-    const avg = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
-    const threshold = avg < 140 ? 0 : 255;
-    data[i] = threshold;
-    data[i + 1] = threshold;
-    data[i + 2] = threshold;
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+
+    // Contrast stretch (makes text crisp while keeping faint numbers legible)
+    const factor = 1.3;
+    const v = Math.min(255, Math.max(0, factor * (gray - 128) + 128));
+
+    data[i] = v;
+    data[i + 1] = v;
+    data[i + 2] = v;
   }
 
   ctx.putImageData(imgData, 0, 0);
@@ -109,61 +116,70 @@ export const OcrIntake: React.FC<OcrIntakeProps> = ({ onFinishCommit, onOpenManu
   const fileInputRef = useRef<HTMLInputElement>(null);
   const allItems = useLiveQuery(() => db.items.toArray()) ?? [];
 
-  // MAXIMUM Line Capturing Parser (Processes up to 50+ lines reliably)
+  // MAXIMUM Line Capturing Parser (Extracts all 22+ line items accurately)
   const parseRawInvoiceText = async (text: string, currentSupplier: string) => {
     setOcrStatus('Running line extraction & item mapping engine...');
 
-    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    const rawLines = text.split('\n').map(l => l.trim()).filter(Boolean);
     const rows: ParsedOcrRow[] = [];
 
-    const totalRowRegex = /^total|subtotal|grand total|amount due|balance|page \d+/i;
+    const totalRowRegex = /^(total|subtotal|grand total|amount due|balance|page \d+)/i;
+    const headerRegex = /^(qty|unit|code|description|price|amount)/i;
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
+    for (let i = 0; i < rawLines.length; i++) {
+      const line = rawLines[i];
 
-      // Ignore totals row or header
-      if (totalRowRegex.test(line) || /^qty\s+unit\s+code/i.test(line)) {
-        console.log('Skipping header/totals line:', line);
+      // Ignore headers or footer total lines
+      if (totalRowRegex.test(line) || headerRegex.test(line)) {
         continue;
       }
 
-      // Strategy 1: Standard structured line regex
-      const match1 = line.match(/^(\d+)\s+([A-Za-z]+)\s+([A-Za-z0-9\-_]+)\s+(.+?)\s+([\d,]+\.?\d*)\s+([\d,]+\.?\d*)$/);
+      // Strategy 1: Full 7-column structured invoice line regex (QTY, UNIT, CODE, DESCRIPTION, SIZE, PRICE, AMOUNT)
+      const match7 = line.match(/^(\d+)\s+([A-Za-z]+)\s+([A-Za-z0-9\-_]+)\s+(.+?)\s+(\d+(?:\.\d+)?\s*(?:KG|G|LB|OZ|g|kg)?)\s+([\d,]+\.?\d*)\s+([\d,]+\.?\d*)$/i);
+
+      // Strategy 2: 6-column structured line regex (without explicit size column)
+      const match6 = line.match(/^(\d+)\s+([A-Za-z]+)\s+([A-Za-z0-9\-_]+)\s+(.+?)\s+([\d,]+\.?\d*)\s+([\d,]+\.?\d*)$/i);
 
       let qty = 1;
       let unit = 'BOX';
       let supplier_code = '';
       let rawDesc = '';
+      let extractedSize = '';
       let unit_price = 0;
       let amount = 0;
 
-      if (match1) {
-        qty = parseFloat(match1[1]);
-        unit = match1[2].toUpperCase();
-        supplier_code = match1[3].toUpperCase();
-        rawDesc = match1[4].trim();
-        unit_price = parseFloat(match1[5].replace(/,/g, ''));
-        amount = parseFloat(match1[6].replace(/,/g, ''));
+      if (match7) {
+        qty = parseFloat(match7[1]);
+        unit = match7[2].toUpperCase();
+        supplier_code = match7[3].toUpperCase();
+        rawDesc = match7[4].trim();
+        extractedSize = match7[5].toUpperCase().replace(/\s+/g, '');
+        unit_price = parseFloat(match7[6].replace(/,/g, ''));
+        amount = parseFloat(match7[7].replace(/,/g, ''));
+      } else if (match6) {
+        qty = parseFloat(match6[1]);
+        unit = match6[2].toUpperCase();
+        supplier_code = match6[3].toUpperCase();
+        rawDesc = match6[4].trim();
+        unit_price = parseFloat(match6[5].replace(/,/g, ''));
+        amount = parseFloat(match6[6].replace(/,/g, ''));
       } else {
-        // Strategy 2: Flexible extraction for real camera photos
-        // Look for supplier code (digits like 4460, 5105, 4392, 3912, 4455, 5409 or CDO-*)
-        const codeMatch = line.match(/([A-Za-z0-9\-_]{3,12})/g);
+        // Strategy 3: Flexible extraction for camera OCR lines
+        const codeMatches = line.match(/([A-Za-z0-9\-_]{3,12})/g);
         const numbers = line.match(/\b\d+(?:\.\d+)?\b/g);
         const prices = line.match(/[\d,]+\.\d{2}/g);
 
-        if (!codeMatch || codeMatch.length === 0) continue;
+        if (!codeMatches || codeMatches.length === 0) continue;
 
-        // Try to identify supplier code from codeMatch
-        const potentialCode = codeMatch.find(c => /^\d{3,5}$/.test(c) || /^[A-Z]{2,4}-/.test(c)) || codeMatch[0];
+        // Find supplier code (digits like 4460, 4462, 4463, 1435, 5105, 5098, 3786, 1116, 1118, 3176, 4392, 474, 5009, 3912, 3913, 4292, 4721, 4395, 4979, 4455, 403, 5409 or CDO-*)
+        const potentialCode = codeMatches.find(c => /^\d{3,5}$/.test(c) || /^[A-Z]{2,4}-/.test(c)) || codeMatches[0];
 
-        // If line has no valid item identifier, skip
         if (!potentialCode || potentialCode.length < 3 || /total|amount|price|unit/i.test(potentialCode)) {
           continue;
         }
 
         supplier_code = potentialCode.toUpperCase();
 
-        // Quantities are usually small integers (1 to 99) at start of line
         if (numbers && numbers.length > 0) {
           const firstNum = parseFloat(numbers[0]);
           if (firstNum > 0 && firstNum < 200) {
@@ -171,23 +187,23 @@ export const OcrIntake: React.FC<OcrIntakeProps> = ({ onFinishCommit, onOpenManu
           }
         }
 
-        // Prices are usually numbers > 100 or numbers with decimals
         if (prices && prices.length > 0) {
           unit_price = parseFloat(prices[0].replace(/,/g, ''));
+          if (prices.length > 1) {
+            amount = parseFloat(prices[1].replace(/,/g, ''));
+          }
         } else if (numbers && numbers.length > 1) {
           const lastNum = parseFloat(numbers[numbers.length - 1]);
           if (lastNum > 50) {
-            // Fix missing decimal point misreads (e.g. 101500 -> 1015.00)
             unit_price = lastNum > 10000 ? lastNum / 100 : lastNum;
           }
         }
 
         unit = line.toLowerCase().includes('pack') ? 'PACK' : 'BOX';
 
-        // Extract description text
         rawDesc = line
           .replace(new RegExp(supplier_code, 'gi'), '')
-          .replace(/\b\d+\s*(box|pack|kg|g)\b/gi, '')
+          .replace(/\b\d+\s*(box|pack)\b/gi, '')
           .replace(/[\d,]+\.\d{2}/g, '')
           .replace(/\|\s*/g, ' ')
           .replace(/\[\s*/g, ' ')
@@ -198,35 +214,38 @@ export const OcrIntake: React.FC<OcrIntakeProps> = ({ onFinishCommit, onOpenManu
       if (!supplier_code && !rawDesc) continue;
 
       // Extract size e.g. 250G, 500G, 1KG, 1.1KG, 3.04KG, 225G, 240G, 960G
-      const sizeMatch = (rawDesc + ' ' + line).match(/(\d+(?:\.\d+)?\s*(?:KG|G|LB|OZ))/i);
-      const size = sizeMatch ? sizeMatch[1].toUpperCase().replace(/\s+/g, '') : '1KG';
+      if (!extractedSize) {
+        const sizeMatch = (rawDesc + ' ' + line).match(/(\d+(?:\.\d+)?\s*(?:KG|G|g|kg|LB|OZ))/i);
+        extractedSize = sizeMatch ? sizeMatch[1].toUpperCase().replace(/\s+/g, '') : '1KG';
+      }
 
-      // Extract pcs per box (Items per box multiplier e.g. x 24, x 10, FW x 25, X 16+1)
+      // Extract pcs per box multiplier (e.g. x 24, x 10, FW x 25, X 16+1)
       const pcsMatch = (rawDesc + ' ' + line).match(/x\s*(\d+)/i) || (rawDesc + ' ' + line).match(/X\s*(\d+)/i);
       let pcs_per_box = pcsMatch ? parseInt(pcsMatch[1]) : 12;
 
-      // Match pipeline against DB items
+      // Match exact SKU code first (ensures 4462 vs 4463 or 3912 vs 3913 are distinct!)
       const matchResult = await findMatchingItemForSupplierRow(
         currentSupplier,
         supplier_code,
         rawDesc || supplier_code,
-        size
+        extractedSize
       );
 
       const matchedObj = allItems.find(it => it.id === matchResult.matchedItemId);
-      if (matchedObj && matchedObj.pcs_per_box) {
-        pcs_per_box = matchedObj.pcs_per_box;
+      if (matchedObj) {
+        if (matchedObj.pcs_per_box) pcs_per_box = matchedObj.pcs_per_box;
+        if (matchedObj.size) extractedSize = matchedObj.size;
       }
 
       const description = matchedObj ? matchedObj.name : rawDesc || `Item ${supplier_code}`;
 
       rows.push({
-        id: `row-${Date.now()}-${i}`,
+        id: `row-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 4)}`,
         supplier_code: supplier_code || (matchedObj ? matchedObj.sku_code : '4460'),
         description,
         qty: qty || 1,
         unit: unit || 'BOX',
-        size: matchedObj ? matchedObj.size : size,
+        size: extractedSize || (matchedObj ? matchedObj.size : '1KG'),
         pcs_per_box: pcs_per_box || 12,
         unit_price: unit_price || (matchedObj ? matchedObj.latest_unit_cost || 0 : 1000),
         amount: amount || (qty * (unit_price || 1000)),

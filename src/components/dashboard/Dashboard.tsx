@@ -1,20 +1,21 @@
 import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, resetAllInventoryToZero } from '../../db/database';
+import { db } from '../../db/database';
 import { ResetAuditLogModal } from '../history/ResetAuditLogModal';
 import {
   AlertTriangle,
   FileQuestion,
   Truck,
   ScanLine,
-  PlusCircle,
   TrendingUp,
   History,
-  PackageCheck,
   ChevronRight,
-  RotateCcw,
   Box,
   Trash2,
+  ArrowUpFromLine,
+  ArrowDownToLine,
+  SearchCode,
+  Layers,
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -39,67 +40,144 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const lowStockItems = items.filter(i => i.current_qty <= i.low_stock_threshold);
   const totalValuation = items.reduce((acc, i) => acc + (i.current_qty * (i.latest_unit_cost || 0)), 0);
   const totalBoxesCount = items.reduce((acc, i) => acc + i.current_qty, 0);
-  const totalPcsCount = items.reduce((acc, i) => acc + (i.current_qty * (i.pcs_per_box || 1)), 0);
 
   const scheduledDeliveries = deliveryPlans.filter(p => p.status === 'SCHEDULED' || p.status === 'DRAFT');
 
-  const handleGlobalResetToZero = async () => {
-    const confirmReset = window.confirm(
-      'RESET ALL INVENTORY TO 0?\n\nAre you sure you want to set the current stock of ALL items to 0? This will record an audit trail entry.'
-    );
-    if (confirmReset) {
-      await resetAllInventoryToZero();
-      alert('All item stock quantities have been reset to 0.');
-    }
-  };
 
   return (
-    <div className="space-y-4">
-      {/* Valuation & Quick Overview Cards */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="card-glass p-3.5 bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700/60">
-          <div className="flex items-center gap-2 text-slate-400 text-xs font-medium">
-            <TrendingUp className="w-4 h-4 text-emerald-400" />
+    <div className="space-y-4 text-slate-800">
+      {/* 6-Card Action Menu Grid (Exact Match to Reference Screenshot) */}
+      <div className="grid grid-cols-2 gap-3.5 pt-1">
+        {/* Card 1: GRN */}
+        <button
+          onClick={() => setActiveTab('ocr_intake')}
+          className="card-action-grid py-6 px-3 flex flex-col items-center justify-center border-b-4 border-b-[#ff6b00] group"
+        >
+          <div className="icon-ring-blue flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+            <ScanLine className="w-8 h-8 text-[#0b2b3c] stroke-[2.2]" />
+          </div>
+          <span className="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">
+            GRN
+          </span>
+          <span className="text-[10px] text-slate-500 font-semibold mt-0.5">OCR Invoice Scan</span>
+        </button>
+
+        {/* Card 2: Delivery Order */}
+        <button
+          onClick={() => setActiveTab('delivery')}
+          className="card-action-grid py-6 px-3 flex flex-col items-center justify-center border-b-4 border-b-blue-600 group"
+        >
+          <div className="icon-ring-blue flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+            <Truck className="w-8 h-8 text-blue-600 stroke-[2.2]" />
+          </div>
+          <span className="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">
+            Delivery Order
+          </span>
+          <span className="text-[10px] text-slate-500 font-semibold mt-0.5">Dispatches & Plans</span>
+        </button>
+
+        {/* Card 3: Stock Transfer */}
+        <button
+          onClick={onOpenReceiveModal}
+          className="card-action-grid py-6 px-3 flex flex-col items-center justify-center border-b-4 border-b-cyan-500 group"
+        >
+          <div className="icon-ring-blue flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+            <Layers className="w-8 h-8 text-cyan-600 stroke-[2.2]" />
+          </div>
+          <span className="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">
+            Stock Transfer
+          </span>
+          <span className="text-[10px] text-slate-500 font-semibold mt-0.5">Receive & Freezers</span>
+        </button>
+
+        {/* Card 4: Stock Take */}
+        <button
+          onClick={() => setActiveTab('inventory')}
+          className="card-action-grid py-6 px-3 flex flex-col items-center justify-center border-b-4 border-b-sky-500 group"
+        >
+          <div className="icon-ring-blue flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+            <ArrowUpFromLine className="w-8 h-8 text-sky-600 stroke-[2.2]" />
+          </div>
+          <span className="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">
+            Stock Take
+          </span>
+          <span className="text-[10px] text-slate-500 font-semibold mt-0.5">Catalog & Corrections</span>
+        </button>
+
+        {/* Card 5: PO */}
+        <button
+          onClick={onOpenManualIntake}
+          className="card-action-grid py-6 px-3 flex flex-col items-center justify-center border-b-4 border-b-purple-500 group"
+        >
+          <div className="icon-ring-blue flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+            <ArrowDownToLine className="w-8 h-8 text-purple-600 stroke-[2.2]" />
+          </div>
+          <span className="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">
+            PO
+          </span>
+          <span className="text-[10px] text-slate-500 font-semibold mt-0.5">Manual Stock Intake</span>
+        </button>
+
+        {/* Card 6: Gap Check */}
+        <button
+          onClick={() => setActiveTab('history')}
+          className="card-action-grid py-6 px-3 flex flex-col items-center justify-center border-b-4 border-b-indigo-500 group"
+        >
+          <div className="icon-ring-blue flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+            <SearchCode className="w-8 h-8 text-indigo-600 stroke-[2.2]" />
+          </div>
+          <span className="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">
+            Gap Check
+          </span>
+          <span className="text-[10px] text-slate-500 font-semibold mt-0.5">Audit Log & Check</span>
+        </button>
+      </div>
+
+      {/* Valuation & Overview Banner */}
+      <div className="grid grid-cols-2 gap-3 mt-2">
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-1.5 text-slate-500 text-xs font-semibold">
+            <TrendingUp className="w-4 h-4 text-emerald-600" />
             <span>Stock Valuation</span>
           </div>
-          <div className="text-xl font-extrabold text-white mt-1">
+          <div className="text-lg font-black text-slate-900 mt-1">
             ₱{totalValuation.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
-          <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5">
+          <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">
             <span>{items.length} SKUs</span>
             <span>•</span>
-            <span className="text-emerald-400 font-bold flex items-center gap-0.5">
+            <span className="text-emerald-600 font-bold flex items-center gap-0.5">
               <Box className="w-3 h-3" />
-              {totalBoxesCount} BOXES ({totalPcsCount} pcs)
+              {totalBoxesCount} Boxes
             </span>
           </div>
         </div>
 
-        <div className="card-glass p-3.5 bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700/60">
-          <div className="flex items-center gap-2 text-slate-400 text-xs font-medium">
-            <FileQuestion className="w-4 h-4 text-purple-400" />
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-1.5 text-slate-500 text-xs font-semibold">
+            <FileQuestion className="w-4 h-4 text-purple-600" />
             <span>Pending BOs</span>
           </div>
-          <div className="text-xl font-extrabold text-purple-300 mt-1">
+          <div className="text-lg font-black text-purple-700 mt-1">
             {openBackorders.length} Orders
           </div>
-          <div className="text-[11px] text-slate-400 mt-0.5">
-            {openBackorders.reduce((a, b) => a + b.qty, 0)} boxes requested
+          <div className="text-[11px] text-slate-500 mt-0.5">
+            {openBackorders.reduce((a, b) => a + b.qty, 0)} total boxes requested
           </div>
         </div>
       </div>
 
       {/* Low Stock Alert Section */}
       {lowStockItems.length > 0 && (
-        <div className="card-glass p-4 bg-amber-950/30 border-amber-500/40">
-          <div className="flex items-center justify-between mb-2.5">
-            <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
-              <AlertTriangle className="w-4 h-4 animate-bounce" />
+        <div className="bg-amber-50 p-4 rounded-2xl border border-amber-300 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 text-amber-800 font-bold text-sm">
+              <AlertTriangle className="w-4 h-4 text-amber-600 animate-bounce" />
               <span>Low Stock Alerts ({lowStockItems.length})</span>
             </div>
             <button
               onClick={() => setActiveTab('inventory')}
-              className="text-xs font-semibold text-amber-400 hover:underline flex items-center gap-0.5"
+              className="text-xs font-bold text-amber-800 hover:underline flex items-center gap-0.5"
             >
               <span>View All</span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -111,15 +189,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div
                 key={item.id}
                 onClick={() => item.id && onSelectItem(item.id)}
-                className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800/80 cursor-pointer border border-amber-500/20"
+                className="flex items-center justify-between p-2.5 rounded-xl bg-white hover:bg-slate-50 cursor-pointer border border-amber-200 shadow-2xs"
               >
                 <div>
-                  <div className="font-semibold text-xs text-slate-200">{item.name}</div>
-                  <div className="text-[11px] text-slate-400">{item.category} • {item.size} • {item.pcs_per_box || 12} pcs/box</div>
+                  <div className="font-bold text-xs text-slate-900">{item.name}</div>
+                  <div className="text-[11px] text-slate-500">{item.category} • {item.size}</div>
                 </div>
                 <div className="text-right">
-                  <div className="font-bold text-xs text-amber-400">{item.current_qty} {item.unit}</div>
-                  <div className="text-[10px] text-slate-500">({item.current_qty * (item.pcs_per_box || 1)} total pcs)</div>
+                  <div className="font-extrabold text-xs text-amber-700">{item.current_qty} {item.unit}</div>
+                  <div className="text-[10px] text-slate-400">({item.current_qty * (item.pcs_per_box || 1)} pcs)</div>
                 </div>
               </div>
             ))}
@@ -127,74 +205,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       )}
 
-      {/* Quick Action Grid */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between px-1">
-          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            Quick Warehouse Actions
-          </h2>
-          <button
-            onClick={handleGlobalResetToZero}
-            className="text-[11px] font-bold text-rose-400 hover:underline flex items-center gap-1"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset Inventory to 0</span>
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2.5">
-          <button
-            onClick={() => setActiveTab('ocr_intake')}
-            className="btn-touch bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-lg shadow-red-900/30 flex items-center gap-2"
-          >
-            <ScanLine className="w-5 h-5 text-rose-200" />
-            <span>OCR Invoice Scan</span>
-          </button>
-
-          <button
-            onClick={onOpenReceiveModal}
-            className="btn-touch bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 flex items-center gap-2"
-          >
-            <PackageCheck className="w-5 h-5 text-emerald-400" />
-            <span>Receive Stock</span>
-          </button>
-
-          <button
-            onClick={onOpenManualIntake}
-            className="btn-touch bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 flex items-center gap-2"
-          >
-            <PlusCircle className="w-5 h-5 text-blue-400" />
-            <span>Manual Intake</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('delivery')}
-            className="btn-touch bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 flex items-center gap-2"
-          >
-            <Truck className="w-5 h-5 text-amber-400" />
-            <span>Delivery Plan</span>
-          </button>
-        </div>
-      </div>
-
       {/* Upcoming Scheduled Deliveries */}
-      <div className="card-glass p-3.5 space-y-2.5">
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2.5">
         <div className="flex items-center justify-between">
-          <h2 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-            <Truck className="w-4 h-4 text-amber-400" />
+          <h2 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+            <Truck className="w-4 h-4 text-[#ff6b00]" />
             <span>Pending Deliveries ({scheduledDeliveries.length})</span>
           </h2>
           <button
             onClick={() => setActiveTab('delivery')}
-            className="text-xs font-medium text-red-400 hover:underline"
+            className="text-xs font-bold text-[#ff6b00] hover:underline"
           >
             Manage
           </button>
         </div>
 
         {scheduledDeliveries.length === 0 ? (
-          <div className="text-center py-4 text-xs text-slate-500">
-            No pending delivery plans. Create one to dispatch stock.
+          <div className="text-center py-3 text-xs text-slate-400 font-medium">
+            No pending delivery orders found.
           </div>
         ) : (
           <div className="space-y-2">
@@ -202,13 +230,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div
                 key={plan.id}
                 onClick={() => setActiveTab('delivery')}
-                className="p-2.5 rounded-lg bg-slate-900/60 hover:bg-slate-800/80 cursor-pointer border border-slate-700/60 flex items-center justify-between"
+                className="p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 cursor-pointer border border-slate-200 flex items-center justify-between"
               >
                 <div>
-                  <div className="font-semibold text-xs text-slate-200">{plan.client_name}</div>
-                  <div className="text-[11px] text-slate-400">Date: {plan.delivery_date}</div>
+                  <div className="font-bold text-xs text-slate-900">{plan.client_name}</div>
+                  <div className="text-[11px] text-slate-500">Date: {plan.delivery_date}</div>
                 </div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
                   {plan.status}
                 </span>
               </div>
@@ -218,26 +246,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* Recent Activity Audit Logs */}
-      <div className="card-glass p-3.5 space-y-2.5">
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2.5">
         <div className="flex items-center justify-between">
-          <h2 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-            <History className="w-4 h-4 text-blue-400" />
-            <span>Recent Stock Audit Log</span>
+          <h2 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+            <History className="w-4 h-4 text-blue-600" />
+            <span>Recent Audit Logs</span>
           </h2>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsResetAuditModalOpen(true)}
-              className="text-xs font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1 px-2 py-0.5 rounded bg-rose-950/40 border border-rose-900/50"
-              title="Reset & Clear Audit Trail Logs (OTP: 1201)"
+              className="text-xs font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-50 border border-rose-200"
+              title="Reset & Clear Audit Logs (OTP: 1201)"
             >
-              <Trash2 className="w-3 h-3 text-rose-400" />
-              <span>Reset Logs</span>
+              <Trash2 className="w-3 h-3 text-rose-600" />
+              <span>Clear</span>
             </button>
             <button
               onClick={() => setActiveTab('history')}
-              className="text-xs font-medium text-blue-400 hover:underline"
+              className="text-xs font-bold text-blue-600 hover:underline"
             >
-              Full Trail
+              View All
             </button>
           </div>
         </div>
@@ -252,16 +280,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         <div className="space-y-2">
           {recentTransactions.map(tx => (
-            <div key={tx.id} className="p-2 rounded bg-slate-900/40 text-xs border border-slate-800 flex items-center justify-between">
+            <div key={tx.id} className="p-2 rounded-xl bg-slate-50 text-xs border border-slate-200 flex items-center justify-between">
               <div>
-                <div className="font-medium text-slate-300">{tx.item_name}</div>
+                <div className="font-bold text-slate-800">{tx.item_name}</div>
                 <div className="text-[10px] text-slate-500">{tx.reason}</div>
               </div>
               <div className="text-right">
-                <span className={`font-bold ${tx.qty_delta >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                <span className={`font-black ${tx.qty_delta >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {tx.qty_delta >= 0 ? `+${tx.qty_delta}` : tx.qty_delta}
                 </span>
-                <div className="text-[9px] text-slate-500">
+                <div className="text-[9px] text-slate-400">
                   {new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
@@ -272,3 +300,4 @@ export const Dashboard: React.FC<DashboardProps> = ({
     </div>
   );
 };
+

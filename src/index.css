@@ -2,20 +2,18 @@
 
 @layer base {
   :root {
-    --bg-main: #0f172a;
-    --bg-card: #1e293b;
-    --bg-card-hover: #334155;
-    --text-primary: #f8fafc;
-    --text-muted: #94a3b8;
-    --accent-red: #ef4444;
-    --accent-amber: #f59e0b;
-    --accent-emerald: #10b981;
-    --accent-indigo: #6366f1;
+    --bg-navy: #0b2b3c;
+    --bg-main: #f1f5f9;
+    --bg-card: #ffffff;
+    --text-primary: #0f172a;
+    --text-muted: #64748b;
+    --accent-orange: #ff6b00;
+    --accent-blue: #1e40af;
   }
 
   body {
     background-color: #0b0f19;
-    color: #f8fafc;
+    color: #0f172a;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
@@ -29,7 +27,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #0f172a;
+  background: #f1f5f9;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
   position: relative;
   overflow-x: hidden;
@@ -40,7 +38,7 @@
     min-height: 900px;
     max-height: 92vh;
     border-radius: 32px;
-    border: 8px solid #1e293b;
+    border: 8px solid #0f172a;
     margin-top: 2rem;
     margin-bottom: 2rem;
   }
@@ -53,27 +51,47 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #f1f5f9;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #cbd5e1;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #94a3b8;
 }
 
-/* Large Warehouse Touch Buttons */
+/* Reference UI Action Card Styling */
+.card-action-grid {
+  background: #ffffff;
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease-in-out;
+}
+
+.card-action-grid:active {
+  transform: scale(0.97);
+}
+
+.icon-ring-blue {
+  width: 4.25rem;
+  height: 4.25rem;
+  border-radius: 9999px;
+  border: 3.5px solid #dbeafe;
+  background: radial-gradient(circle, #ffffff 60%, #eff6ff 100%);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
 .btn-touch {
-  min-height: 52px;
+  min-height: 48px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0.75rem 1.25rem;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 0.95rem;
   border-radius: 0.75rem;
   transition: all 0.15s ease-in-out;
   cursor: pointer;
@@ -84,8 +102,9 @@
 }
 
 .card-glass {
-  background: rgba(30, 41, 59, 0.85);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
+

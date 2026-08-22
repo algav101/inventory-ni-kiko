@@ -177,71 +177,86 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 onClick={handleGlobalResetToZero}
                 className="card-action-grid py-4 px-3 flex flex-col items-center justify-center border-b-4 border-b-rose-600 group hover:bg-rose-50/50"
               >
-                <div className="w-12 h-12 rounded-full border-2 border-slate-300 bg-slate-100 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform text-slate-900">
+                <div className="w-12 h-12 rounded-full border-2 border-rose-200 bg-rose-50 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform text-rose-600">
                   <RotateCcw className="w-6 h-6 stroke-[2.2]" />
                 </div>
-                <span className="font-extrabold text-xs text-slate-900 tracking-tight text-center">
+                <span className="font-extrabold text-xs tracking-tight text-center">
                   Inventory Reset
                 </span>
-                <span className="text-[9px] text-slate-700 font-bold mt-0.5">Reset All to 0</span>
+                <span className="text-[9px] font-bold mt-0.5 opacity-80">Reset All to 0</span>
               </button>
 
               {/* Auto Add Stocks */}
               <button
                 onClick={() => setActiveTab('ocr_intake')}
-                className="card-action-grid py-4 px-3 flex flex-col items-center justify-center border-b-4 border-b-slate-700 group"
+                className="card-action-grid py-4 px-3 flex flex-col items-center justify-center border-b-4 border-b-[#ff6b00] group"
               >
                 <div className="icon-ring-blue flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
-                  <ScanLine className="w-6 h-6 text-slate-900 stroke-[2.2]" />
+                  <ScanLine className="w-6 h-6 text-[#0b2b3c] stroke-[2.2]" />
                 </div>
-                <span className="font-extrabold text-xs text-slate-900 tracking-tight text-center">
+                <span className="font-extrabold text-xs tracking-tight text-center">
                   Auto Add Stocks
                 </span>
-                <span className="text-[9px] text-slate-700 font-semibold mt-0.5">OCR Invoice Scan</span>
+                <span className="text-[9px] font-semibold mt-0.5 opacity-80">OCR Invoice Scan</span>
               </button>
 
               {/* Update Stocks */}
               <button
                 onClick={onOpenReceiveModal}
-                className="card-action-grid py-4 px-3 flex flex-col items-center justify-center border-b-4 border-b-slate-700 group"
+                className="card-action-grid py-4 px-3 flex flex-col items-center justify-center border-b-4 border-b-cyan-500 group"
               >
                 <div className="icon-ring-blue flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
-                  <Layers className="w-6 h-6 text-slate-900 stroke-[2.2]" />
+                  <Layers className="w-6 h-6 text-cyan-600 stroke-[2.2]" />
                 </div>
-                <span className="font-extrabold text-xs text-slate-900 tracking-tight text-center">
+                <span className="font-extrabold text-xs tracking-tight text-center">
                   Update Stocks
                 </span>
-                <span className="text-[9px] text-slate-700 font-semibold mt-0.5">Receive & Freezers</span>
+                <span className="text-[9px] font-semibold mt-0.5 opacity-80">Receive & Freezers</span>
               </button>
 
               {/* Manual Add Stocks */}
               <button
                 onClick={onOpenManualIntake}
-                className="card-action-grid py-4 px-3 flex flex-col items-center justify-center border-b-4 border-b-slate-700 group"
+                className="card-action-grid py-4 px-3 flex flex-col items-center justify-center border-b-4 border-b-purple-500 group"
               >
                 <div className="icon-ring-blue flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
-                  <ArrowDownToLine className="w-6 h-6 text-slate-900 stroke-[2.2]" />
+                  <ArrowDownToLine className="w-6 h-6 text-purple-600 stroke-[2.2]" />
                 </div>
-                <span className="font-extrabold text-xs text-slate-900 tracking-tight text-center">
+                <span className="font-extrabold text-xs tracking-tight text-center">
                   Manual Add Stocks
                 </span>
-                <span className="text-[9px] text-slate-700 font-semibold mt-0.5">Manual Entry</span>
+                <span className="text-[9px] font-semibold mt-0.5 opacity-80">Manual Entry</span>
+              </button>
+
+              {/* Returned Items (Bad Orders) Menu Action */}
+              <button
+                onClick={() => setActiveTab('backorder')}
+                className="card-action-grid py-4 px-3 flex flex-col items-center justify-center border-b-4 border-b-purple-600 group"
+              >
+                <div className="icon-ring-blue flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                  <FileQuestion className="w-6 h-6 text-purple-600 stroke-[2.2]" />
+                </div>
+                <span className="font-extrabold text-xs tracking-tight text-center">
+                  Returned Items
+                </span>
+                <span className="text-[9px] font-semibold mt-0.5 opacity-80">Bad Orders & Replacements</span>
               </button>
 
               {/* Set up Delivery Schedule */}
               <button
                 onClick={() => setActiveTab('delivery')}
-                className="card-action-grid py-4 px-3 flex flex-col items-center justify-center border-b-4 border-b-slate-800 group col-span-2"
+                className="card-action-grid py-4 px-3 flex flex-col items-center justify-center border-b-4 border-b-blue-600 group"
               >
                 <div className="icon-ring-blue flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
-                  <Truck className="w-6 h-6 text-slate-900 stroke-[2.2]" />
+                  <Truck className="w-6 h-6 text-blue-600 stroke-[2.2]" />
                 </div>
-                <span className="font-extrabold text-xs text-slate-900 tracking-tight text-center">
+                <span className="font-extrabold text-xs tracking-tight text-center">
                   Set up Delivery Schedule
                 </span>
-                <span className="text-[9px] text-slate-700 font-semibold mt-0.5">Delivery Orders & Plans</span>
+                <span className="text-[9px] font-semibold mt-0.5 opacity-80">Delivery Orders & Plans</span>
               </button>
             </div>
+
 
             {/* Upcoming Scheduled Deliveries inside Manage Inventory Menu */}
             <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-2">

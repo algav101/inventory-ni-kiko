@@ -1,5 +1,10 @@
 export type MeatCategory = 'Hotdog' | 'Tocino' | 'Longganisa' | 'Ham' | 'Bacon' | 'Sausage' | 'Siomai' | 'Burger' | 'Other';
 
+export interface StockLocationQty {
+  location_name: string; // e.g. "Freezer 1", "Freezer 2", "Day Delivery Temp Store", "Display Freezer"
+  qty: number;
+}
+
 export interface Item {
   id?: number;
   sku_code: string; // Internal stable SKU e.g. "MEAT-HD-001" or supplier code "4460"
@@ -9,7 +14,8 @@ export interface Item {
   size: string; // e.g. "1KG", "500G", "250G", "450G"
   pcs_per_box?: number; // e.g. 24, 10, 12, 36 (packs/pcs inside 1 box)
   latest_unit_cost: number | null;
-  current_qty: number; // Quantity in BOXES or primary unit
+  current_qty: number; // Total Quantity in BOXES or primary unit across all freezers
+  stock_locations?: StockLocationQty[];
   low_stock_threshold: number;
   created_at: string;
   updated_at: string;
@@ -63,6 +69,7 @@ export interface DeliveryPlan {
   delivery_date: string;
   status: DeliveryStatus;
   notes?: string;
+  total_amount?: number;
   created_at: string;
   confirmed_at?: string | null;
 }
@@ -75,6 +82,10 @@ export interface DeliveryLineItem {
   unit?: string;
   pcs_per_box?: number;
   qty_planned: number;
+  qty_type?: 'BOX' | 'PCS';
+  unit_price?: number | null;
+  price_type?: 'PER_BOX' | 'PER_PC';
+  total_price?: number;
   qty_delivered: number;
 }
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, receiveStock } from '../../db/database';
+import { db, receiveStock, DEFAULT_STOCK_LOCATIONS } from '../../db/database';
 import { PackageCheck, X, AlertCircle } from 'lucide-react';
 
 interface ReceiveStockModalProps {
@@ -17,6 +17,8 @@ export const ReceiveStockModal: React.FC<ReceiveStockModalProps> = ({
   const items = useLiveQuery(() => db.items.toArray()) ?? [];
   const [selectedItemId, setSelectedItemId] = useState<number>(initialItemId || (items[0]?.id ?? 0));
   const [mode, setMode] = useState<'ADD' | 'RESET'>('ADD');
+  const [targetLocation, setTargetLocation] = useState<string>('Freezer 1 (Main)');
+  const [customLocation, setCustomLocation] = useState<string>('');
   const [qtyInput, setQtyInput] = useState<string>('10');
   const [unitCostInput, setUnitCostInput] = useState<string>('');
   const [reason, setReason] = useState<string>('');
@@ -34,13 +36,15 @@ export const ReceiveStockModal: React.FC<ReceiveStockModalProps> = ({
     if (isNaN(numQty) || numQty < 0) return;
 
     const costVal = unitCostInput ? parseFloat(unitCostInput) : null;
+    const finalLocation = targetLocation === 'CUSTOM' ? (customLocation.trim() || 'Custom Freezer') : targetLocation;
 
     await receiveStock(
       itemIdToUse,
       numQty,
       mode,
       costVal,
-      reason.trim() || (mode === 'ADD' ? 'Supplier Restock' : 'Physical Recount Reset')
+      reason.trim() || (mode === 'ADD' ? 'Supplier Restock' : 'Physical Recount Reset'),
+      finalLocation
     );
 
     onClose();
@@ -112,6 +116,37 @@ export const ReceiveStockModal: React.FC<ReceiveStockModalProps> = ({
                 ? 'Adds quantity to current stock (e.g. supplier delivery arrival).'
                 : 'Overwrites stock directly to new count (for physical stock count reset).'}
             </p>
+          </div>
+
+          {/* Stock Room / Freezer Location Selector */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center justify-between">
+              <span>Target Stock Room / Freezer</span>
+              <span className="text-[10px] text-amber-400 font-normal">Separate day delivery stock</span>
+            </label>
+            <select
+              value={targetLocation}
+              onChange={e => setTargetLocation(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-bold text-white focus:outline-none focus:border-emerald-500"
+            >
+              {DEFAULT_STOCK_LOCATIONS.map(loc => (
+                <option key={loc} value={loc}>
+                  ❄️ {loc}
+                </option>
+              ))}
+              <option value="CUSTOM">+ Add Custom Location...</option>
+            </select>
+
+            {targetLocation === 'CUSTOM' && (
+              <input
+                type="text"
+                placeholder="e.g. Freezer 3, Temporary Cold Storage"
+                value={customLocation}
+                onChange={e => setCustomLocation(e.target.value)}
+                className="w-full mt-2 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                required
+              />
+            )}
           </div>
 
           {/* Quantity & Unit Cost */}

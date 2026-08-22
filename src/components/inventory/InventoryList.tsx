@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../db/database';
+import { db, DEFAULT_STOCK_LOCATIONS } from '../../db/database';
 import type { MeatCategory } from '../../types';
-import { Search, AlertTriangle, Plus, Box } from 'lucide-react';
+import { Search, AlertTriangle, Plus, Box, Snowflake } from 'lucide-react';
 
 interface InventoryListProps {
   onSelectItem: (itemId: number) => void;
@@ -29,6 +29,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'All' | MeatCategory>('All');
+  const [selectedLocation, setSelectedLocation] = useState<string>('ALL');
   const [filterLowStockOnly, setFilterLowStockOnly] = useState(false);
 
   const items = useLiveQuery(() => db.items.toArray()) ?? [];
@@ -39,9 +40,15 @@ export const InventoryList: React.FC<InventoryListProps> = ({
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.sku_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.size.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesLowStock = filterLowStockOnly ? item.current_qty <= item.low_stock_threshold : true;
 
-    return matchesCategory && matchesSearch && matchesLowStock;
+    const itemQty = selectedLocation === 'ALL'
+      ? item.current_qty
+      : (item.stock_locations?.find(l => l.location_name === selectedLocation)?.qty ?? 0);
+
+    const matchesLowStock = filterLowStockOnly ? itemQty <= item.low_stock_threshold : true;
+    const matchesLocation = selectedLocation === 'ALL' || itemQty > 0 || (item.stock_locations && item.stock_locations.some(l => l.location_name === selectedLocation));
+
+    return matchesCategory && matchesSearch && matchesLowStock && matchesLocation;
   });
 
   return (
@@ -67,6 +74,39 @@ export const InventoryList: React.FC<InventoryListProps> = ({
             <Plus className="w-4 h-4" />
             <span>New SKU</span>
           </button>
+        </div>
+
+        {/* Stock Room / Freezer Location Filter Pills */}
+        <div className="p-1.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 flex items-center gap-1">
+            <Snowflake className="w-3 h-3 text-cyan-400" />
+            <span>Freezer & Storage Location</span>
+          </div>
+          <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar">
+            <button
+              onClick={() => setSelectedLocation('ALL')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 transition-all ${
+                selectedLocation === 'ALL'
+                  ? 'bg-cyan-500 text-slate-950 font-extrabold shadow'
+                  : 'bg-slate-800/80 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              All Storage
+            </button>
+            {DEFAULT_STOCK_LOCATIONS.map(loc => (
+              <button
+                key={loc}
+                onClick={() => setSelectedLocation(loc)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold shrink-0 transition-all ${
+                  selectedLocation === loc
+                    ? 'bg-cyan-600 text-white font-bold shadow'
+                    : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 border border-slate-700/50'
+                }`}
+              >
+                {loc === 'Day Delivery Temp Store' ? '🚚 Day Delivery' : loc.replace(' (Main)', '').replace(' (Backup)', '')}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Category Pills & Low Stock Toggle */}
@@ -103,12 +143,16 @@ export const InventoryList: React.FC<InventoryListProps> = ({
       <div className="space-y-2">
         {filteredItems.length === 0 ? (
           <div className="card-glass p-8 text-center text-slate-400 text-sm">
-            No processed meat items matched your filter.
+            No processed meat items matched your filter criteria.
           </div>
         ) : (
           filteredItems.map(item => {
-            const isLowStock = item.current_qty <= item.low_stock_threshold;
-            const totalPcs = item.current_qty * (item.pcs_per_box || 1);
+            const displayQty = selectedLocation === 'ALL'
+              ? item.current_qty
+              : (item.stock_locations?.find(l => l.location_name === selectedLocation)?.qty ?? 0);
+
+            const isLowStock = displayQty <= item.low_stock_threshold;
+            const totalPcs = displayQty * (item.pcs_per_box || 1);
 
             return (
               <div
@@ -119,7 +163,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({
                 }`}
               >
                 <div className="flex items-start justify-between">
-                  <div className="space-y-1">
+                  <div className="space-y-1 flex-1 pr-2">
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800/50">
                         #{item.sku_code}
@@ -138,10 +182,29 @@ export const InventoryList: React.FC<InventoryListProps> = ({
                       <span>Pcs/Box: <strong className="text-amber-300">{item.pcs_per_box || 12}</strong></span>
                       <span>Price: <strong className="text-slate-200">₱{item.latest_unit_cost?.toFixed(2) || '0.00'}</strong></span>
                     </div>
+
+                    {/* Per-Freezer Stock Breakdown Tags */}
+                    {item.stock_locations && item.stock_locations.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1 mt-1.5 pt-1.5 border-t border-slate-800/80">
+                        {item.stock_locations.map(loc => loc.qty > 0 && (
+                          <span
+                            key={loc.location_name}
+                            className={`text-[9px] font-semibold px-1.5 py-0.5 rounded flex items-center gap-1 ${
+                              loc.location_name === 'Day Delivery Temp Store'
+                                ? 'bg-amber-950/80 text-amber-300 border border-amber-800/60'
+                                : 'bg-slate-800/90 text-cyan-300 border border-slate-700'
+                            }`}
+                          >
+                            <span>{loc.location_name === 'Day Delivery Temp Store' ? '🚚 Day Deliv:' : `${loc.location_name.split(' ')[0]}:`}</span>
+                            <strong className="font-mono text-white">{loc.qty}</strong>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Quantity Badge & Box/Pcs calculation */}
-                  <div className="text-right flex flex-col items-end justify-between">
+                  <div className="text-right flex flex-col items-end justify-between shrink-0">
                     <div
                       className={`px-3 py-1 rounded-xl text-center shadow-inner ${
                         isLowStock
@@ -150,7 +213,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({
                       }`}
                     >
                       <div className="font-extrabold text-base leading-none">
-                        {item.current_qty}
+                        {displayQty}
                       </div>
                       <div className="text-[9px] font-bold uppercase tracking-wider mt-0.5">
                         {item.unit}

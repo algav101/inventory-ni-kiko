@@ -62,8 +62,21 @@ export async function logTransaction(
   });
 }
 
-// Reset ALL inventory to ZERO (User requested feature)
-export async function resetAllInventoryToZero() {
+export const DEFAULT_STOCK_LOCATIONS = [
+  'Freezer 1 (Main)',
+  'Freezer 2 (Backup)',
+  'Day Delivery Temp Store',
+  'Display Freezer',
+];
+
+// Helper to sum total current_qty across stock locations
+export function computeTotalQtyFromLocations(locations?: { location_name: string; qty: number }[]): number {
+  if (!locations || locations.length === 0) return 0;
+  return locations.reduce((sum, loc) => sum + (loc.qty || 0), 0);
+}
+
+// Reset ALL inventory to ZERO (User requested feature with security auth)
+export async function resetAllInventoryToZero(authCode: string = '1234') {
   return db.transaction('rw', [db.items, db.transactions], async () => {
     const allItems = await db.items.toArray();
     const now = new Date().toISOString();
@@ -73,6 +86,10 @@ export async function resetAllInventoryToZero() {
         const oldQty = item.current_qty;
         await db.items.update(item.id, {
           current_qty: 0,
+          stock_locations: [
+            { location_name: 'Freezer 1 (Main)', qty: 0 },
+            { location_name: 'Day Delivery Temp Store', qty: 0 },
+          ],
           updated_at: now,
         });
 
@@ -82,7 +99,7 @@ export async function resetAllInventoryToZero() {
           -oldQty,
           0,
           item.latest_unit_cost,
-          `Global Inventory Reset: cleared count from ${oldQty} to 0`
+          `Global Inventory Reset (Auth Code verified: ${authCode}): cleared stock from ${oldQty} to 0`
         );
       }
     }
@@ -93,7 +110,8 @@ export async function resetAllInventoryToZero() {
 export async function correctStockQuantity(
   itemId: number,
   newQuantity: number,
-  reason: string
+  reason: string,
+  locationName: string = 'Freezer 1 (Main)'
 ) {
   return db.transaction('rw', [db.items, db.transactions], async () => {
     const item = await db.items.get(itemId);
@@ -102,8 +120,19 @@ export async function correctStockQuantity(
     const qtyDelta = newQuantity - item.current_qty;
     const now = new Date().toISOString();
 
+    let locs = item.stock_locations ? [...item.stock_locations] : [];
+    const locIdx = locs.findIndex(l => l.location_name === locationName);
+    if (locIdx >= 0) {
+      locs[locIdx].qty = newQuantity;
+    } else {
+      locs.push({ location_name: locationName, qty: newQuantity });
+    }
+
+    const computedTotal = computeTotalQtyFromLocations(locs);
+
     await db.items.update(itemId, {
-      current_qty: newQuantity,
+      current_qty: computedTotal,
+      stock_locations: locs,
       updated_at: now,
     });
 
@@ -111,33 +140,49 @@ export async function correctStockQuantity(
       itemId,
       'MANUAL_CORRECTION',
       qtyDelta,
-      newQuantity,
+      computedTotal,
       item.latest_unit_cost,
-      reason
+      `Location [${locationName}] corrected: ${reason}`
     );
   });
 }
 
-// Receive Stock (Add vs Reset/Overwrite)
+// Receive Stock (Add vs Reset/Overwrite) per Location
 export async function receiveStock(
   itemId: number,
   qtyValue: number,
   mode: 'ADD' | 'RESET',
   unitCost: number | null,
-  reason: string = 'Stock intake'
+  reason: string = 'Stock intake',
+  locationName: string = 'Freezer 1 (Main)'
 ) {
   return db.transaction('rw', [db.items, db.transactions], async () => {
     const item = await db.items.get(itemId);
     if (!item) throw new Error('Item not found');
 
-    const oldQty = item.current_qty;
-    const newQty = mode === 'ADD' ? oldQty + qtyValue : qtyValue;
-    const delta = mode === 'ADD' ? qtyValue : newQty - oldQty;
+    const oldTotalQty = item.current_qty;
+    let locs = item.stock_locations && item.stock_locations.length > 0
+      ? [...item.stock_locations]
+      : [{ location_name: 'Freezer 1 (Main)', qty: oldTotalQty }];
+
+    const targetLocIdx = locs.findIndex(l => l.location_name === locationName);
+    let oldLocQty = targetLocIdx >= 0 ? locs[targetLocIdx].qty : 0;
+    let newLocQty = mode === 'ADD' ? oldLocQty + qtyValue : qtyValue;
+
+    if (targetLocIdx >= 0) {
+      locs[targetLocIdx] = { location_name: locationName, qty: Math.max(0, newLocQty) };
+    } else {
+      locs.push({ location_name: locationName, qty: Math.max(0, newLocQty) });
+    }
+
+    const newTotalQty = computeTotalQtyFromLocations(locs);
+    const delta = newTotalQty - oldTotalQty;
     const now = new Date().toISOString();
     const type: TransactionType = mode === 'ADD' ? 'STOCK_ADD' : 'STOCK_RESET';
 
     await db.items.update(itemId, {
-      current_qty: newQty,
+      current_qty: newTotalQty,
+      stock_locations: locs,
       latest_unit_cost: unitCost !== null && unitCost > 0 ? unitCost : item.latest_unit_cost,
       updated_at: now,
     });
@@ -146,9 +191,64 @@ export async function receiveStock(
       itemId,
       type,
       delta,
-      newQty,
+      newTotalQty,
       unitCost ?? item.latest_unit_cost,
-      mode === 'ADD' ? `Received +${qtyValue} ${item.unit}: ${reason}` : `Reset stock from ${oldQty} to ${newQty} ${item.unit}: ${reason}`
+      mode === 'ADD'
+        ? `[${locationName}] Received +${qtyValue} ${item.unit}: ${reason}`
+        : `[${locationName}] Reset stock to ${newLocQty} ${item.unit}: ${reason}`
+    );
+  });
+}
+
+// Transfer Stock between Freezers / Stockrooms
+export async function transferStockBetweenLocations(
+  itemId: number,
+  fromLocation: string,
+  toLocation: string,
+  transferQty: number,
+  reason: string = 'Stock transfer'
+) {
+  return db.transaction('rw', [db.items, db.transactions], async () => {
+    const item = await db.items.get(itemId);
+    if (!item) throw new Error('Item not found');
+    if (transferQty <= 0) throw new Error('Transfer quantity must be greater than 0');
+
+    let locs = item.stock_locations && item.stock_locations.length > 0
+      ? [...item.stock_locations]
+      : [{ location_name: 'Freezer 1 (Main)', qty: item.current_qty }];
+
+    const fromIdx = locs.findIndex(l => l.location_name === fromLocation);
+    if (fromIdx < 0 || locs[fromIdx].qty < transferQty) {
+      throw new Error(`Insufficient stock in ${fromLocation} to transfer ${transferQty} ${item.unit}`);
+    }
+
+    // Deduct from source location
+    locs[fromIdx].qty -= transferQty;
+
+    // Add to target location
+    const toIdx = locs.findIndex(l => l.location_name === toLocation);
+    if (toIdx >= 0) {
+      locs[toIdx].qty += transferQty;
+    } else {
+      locs.push({ location_name: toLocation, qty: transferQty });
+    }
+
+    const now = new Date().toISOString();
+    const newTotal = computeTotalQtyFromLocations(locs);
+
+    await db.items.update(itemId, {
+      current_qty: newTotal,
+      stock_locations: locs,
+      updated_at: now,
+    });
+
+    await logTransaction(
+      itemId,
+      'MANUAL_CORRECTION',
+      0,
+      newTotal,
+      item.latest_unit_cost,
+      `Moved ${transferQty} ${item.unit} from [${fromLocation}] -> [${toLocation}]: ${reason}`
     );
   });
 }

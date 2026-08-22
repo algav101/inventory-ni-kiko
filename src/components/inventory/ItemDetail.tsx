@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../db/database';
+import { db, transferStockBetweenLocations, DEFAULT_STOCK_LOCATIONS } from '../../db/database';
 import {
   ArrowLeft,
   PackageCheck,
@@ -10,6 +10,8 @@ import {
   AlertTriangle,
   Barcode,
   Building2,
+  Snowflake,
+  ArrowRightLeft,
 } from 'lucide-react';
 
 interface ItemDetailProps {
@@ -28,6 +30,13 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({
   const [showAddAlias, setShowAddAlias] = useState(false);
   const [supplierName, setSupplierName] = useState('');
   const [supplierCode, setSupplierCode] = useState('');
+
+  // Stock Transfer state
+  const [showTransferForm, setShowTransferForm] = useState(false);
+  const [fromLoc, setFromLoc] = useState('Day Delivery Temp Store');
+  const [toLoc, setToLoc] = useState('Freezer 1 (Main)');
+  const [transferQtyInput, setTransferQtyInput] = useState('1');
+  const [transferError, setTransferError] = useState('');
 
   const item = useLiveQuery(() => db.items.get(itemId), [itemId]);
   const supplierCodes = useLiveQuery(() => db.supplierItemCodes.where('item_id').equals(itemId).toArray(), [itemId]) ?? [];
@@ -61,6 +70,35 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({
     setSupplierName('');
     setSupplierCode('');
     setShowAddAlias(false);
+  };
+
+  const handleTransferStock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setTransferError('');
+
+    const qty = parseFloat(transferQtyInput);
+    if (isNaN(qty) || qty <= 0) {
+      setTransferError('Invalid transfer quantity.');
+      return;
+    }
+    if (fromLoc === toLoc) {
+      setTransferError('Source and target locations must be different.');
+      return;
+    }
+
+    try {
+      await transferStockBetweenLocations(
+        itemId,
+        fromLoc,
+        toLoc,
+        qty,
+        `Moved remaining delivery stock to main storage`
+      );
+      setShowTransferForm(false);
+      setTransferQtyInput('1');
+    } catch (err: any) {
+      setTransferError(err?.message || 'Stock transfer failed.');
+    }
   };
 
   return (
@@ -120,6 +158,128 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({
               ₱{valuation.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Freezer & Stock Room Breakdown Card */}
+      <div className="card-glass p-3.5 space-y-3 border-cyan-900/40">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
+            <Snowflake className="w-4 h-4 text-cyan-400" />
+            <span>Stock Room & Freezer Breakdown</span>
+          </h3>
+
+          <button
+            onClick={() => setShowTransferForm(!showTransferForm)}
+            className="text-xs font-bold text-cyan-400 hover:underline flex items-center gap-1 bg-cyan-950/60 px-2 py-1 rounded border border-cyan-800/60"
+          >
+            <ArrowRightLeft className="w-3.5 h-3.5" />
+            <span>Transfer Stock</span>
+          </button>
+        </div>
+
+        {/* Transfer Stock Inline Form */}
+        {showTransferForm && (
+          <form onSubmit={handleTransferStock} className="p-3 bg-slate-900 rounded-xl border border-cyan-700/60 space-y-2.5">
+            <div className="text-xs font-bold text-cyan-300 flex items-center gap-1">
+              <span>Move Stock Between Freezers</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <label className="block text-[10px] text-slate-400 font-medium mb-1">From Location</label>
+                <select
+                  value={fromLoc}
+                  onChange={e => setFromLoc(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-white"
+                >
+                  {DEFAULT_STOCK_LOCATIONS.map(loc => (
+                    <option key={loc} value={loc}>
+                      {loc}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-slate-400 font-medium mb-1">To Location</label>
+                <select
+                  value={toLoc}
+                  onChange={e => setToLoc(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-white"
+                >
+                  {DEFAULT_STOCK_LOCATIONS.map(loc => (
+                    <option key={loc} value={loc}>
+                      {loc}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] text-slate-400 font-medium mb-1">Quantity to Move ({item.unit})</label>
+              <input
+                type="number"
+                step="any"
+                min="0.1"
+                value={transferQtyInput}
+                onChange={e => setTransferQtyInput(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono font-bold"
+                required
+              />
+            </div>
+
+            {transferError && (
+              <div className="text-[11px] text-rose-400 font-semibold">{transferError}</div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowTransferForm(false)}
+                className="px-2.5 py-1 text-xs text-slate-400"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-lg shadow"
+              >
+                Confirm Transfer
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Location Stock Cards */}
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          {DEFAULT_STOCK_LOCATIONS.map(loc => {
+            const qtyInLoc = item.stock_locations?.find(l => l.location_name === loc)?.qty ?? 0;
+            const isDayDeliv = loc === 'Day Delivery Temp Store';
+
+            return (
+              <div
+                key={loc}
+                className={`p-2.5 rounded-xl border flex flex-col justify-between ${
+                  isDayDeliv
+                    ? 'bg-amber-950/40 border-amber-800/40'
+                    : 'bg-slate-900/80 border-slate-800'
+                }`}
+              >
+                <div className="text-[10px] font-bold text-slate-400 flex items-center justify-between">
+                  <span>{isDayDeliv ? '🚚 Day Delivery' : loc.replace(' (Main)', '').replace(' (Backup)', '')}</span>
+                  {isDayDeliv && (
+                    <span className="text-[9px] bg-amber-900/80 text-amber-300 px-1 rounded">Temp</span>
+                  )}
+                </div>
+                <div className="mt-1 flex items-baseline justify-between">
+                  <span className="font-extrabold text-base text-white">{qtyInLoc}</span>
+                  <span className="text-[10px] font-semibold text-slate-400">{item.unit}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

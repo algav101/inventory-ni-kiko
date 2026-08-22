@@ -1,6 +1,9 @@
-# React + TypeScript + Vite
+# Mobile Inventory ni Kiko
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+🔗 **Live Link:** [https://inventory-ni-kiko.onrender.com](https://inventory-ni-kiko.onrender.com)
+
+React + TypeScript + Vite inventory management app.
+
 
 Currently, two official plugins are available:
 

@@ -6,11 +6,12 @@ import {
   FileQuestion,
   ScanLine,
   PackageCheck,
-  AlertTriangle,
   RotateCcw,
 } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, resetAllInventoryToZero } from '../../db/database';
+import { db } from '../../db/database';
+import type { Item } from '../../types';
+import { ResetAuthModal } from '../inventory/ResetAuthModal';
 
 interface MobileShellProps {
   children: React.ReactNode;
@@ -25,23 +26,20 @@ export const MobileShell: React.FC<MobileShellProps> = ({
   setActiveTab,
   onOpenReceiveModal,
 }) => {
+  const [isResetModalOpen, setIsResetModalOpen] = React.useState(false);
+  const [showToast, setShowToast] = React.useState(false);
+
   const lowStockCount = useLiveQuery(async () => {
     const items = await db.items.toArray();
-    return items.filter(i => i.current_qty <= i.low_stock_threshold).length;
+    return items.filter((i: Item) => i.current_qty <= i.low_stock_threshold).length;
   }) ?? 0;
 
   const openBoCount = useLiveQuery(async () => {
     return db.backOrders.where('status').equals('OPEN').count();
   }) ?? 0;
 
-  const handleGlobalResetToZero = async () => {
-    const confirmReset = window.confirm(
-      'RESET ALL INVENTORY TO 0?\n\nAre you sure you want to set the current stock of ALL items to 0? This will record an audit trail entry.'
-    );
-    if (confirmReset) {
-      await resetAllInventoryToZero();
-      alert('All item stock quantities have been reset to 0.');
-    }
+  const handleGlobalResetToZero = () => {
+    setIsResetModalOpen(true);
   };
 
   return (
@@ -77,17 +75,6 @@ export const MobileShell: React.FC<MobileShellProps> = ({
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset to 0</span>
             </button>
-
-            {lowStockCount > 0 && (
-              <button
-                onClick={() => setActiveTab('inventory')}
-                className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold"
-                title={`${lowStockCount} items below threshold`}
-              >
-                <AlertTriangle className="w-3.5 h-3.5" />
-                <span>{lowStockCount} Low</span>
-              </button>
-            )}
 
             <button
               onClick={onOpenReceiveModal}
@@ -173,6 +160,23 @@ export const MobileShell: React.FC<MobileShellProps> = ({
           </button>
         </div>
       </nav>
+
+      {/* Reset Auth Confirmation Modal */}
+      <ResetAuthModal
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        onSuccess={() => {
+          setShowToast(true);
+          setTimeout(() => setShowToast(false), 4000);
+        }}
+      />
+
+      {/* Success Toast */}
+      {showToast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-xl border border-emerald-400 animate-in fade-in slide-in-from-bottom-5">
+          ✓ All inventory counts have been reset to 0 across all freezers.
+        </div>
+      )}
     </div>
   );
 };

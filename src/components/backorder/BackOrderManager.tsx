@@ -74,13 +74,19 @@ export const BackOrderManager: React.FC = () => {
 
     const itemObj = await db.items.get(bo.item_id);
 
+    const pcsPerBox = bo.pcs_per_box || itemObj?.pcs_per_box || 12;
+    const unitPrice = itemObj?.latest_unit_cost || 0;
     await db.deliveryLineItems.add({
       delivery_plan_id: planId,
       item_id: bo.item_id,
       item_name: bo.item_name,
       unit: itemObj?.unit || 'BOX',
-      pcs_per_box: bo.pcs_per_box || itemObj?.pcs_per_box || 12,
+      pcs_per_box: pcsPerBox,
       qty_planned: bo.qty,
+      qty_type: 'BOX',
+      unit_price: unitPrice,
+      price_type: 'PER_BOX',
+      total_price: bo.qty * unitPrice,
       qty_delivered: 0,
     });
 

@@ -64,18 +64,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* Current Inventory Value & Returned Items Banner */}
       <div className="grid grid-cols-2 gap-3 pt-1">
         <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center gap-1.5 text-slate-500 text-xs font-semibold">
+          <div className="flex items-center gap-1.5 text-slate-800 text-xs font-semibold">
             <TrendingUp className="w-4 h-4 text-emerald-600" />
             <span>Current Inventory Value</span>
           </div>
           <div className="text-lg font-black text-slate-900 mt-1">
             ₱{totalValuation.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
-          <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">
+          <div className="text-[11px] text-slate-700 mt-0.5 flex items-center gap-1">
             <span>{items.length} SKUs</span>
             <span>•</span>
-            <span className="text-emerald-600 font-bold flex items-center gap-0.5">
-              <Box className="w-3 h-3" />
+            <span className="font-bold flex items-center gap-0.5 text-slate-900">
+              <Box className="w-3 h-3 text-slate-700" />
               {totalBoxesCount} Boxes
             </span>
           </div>
@@ -83,16 +83,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         <div
           onClick={() => setActiveTab('backorder')}
-          className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm cursor-pointer hover:border-purple-300 transition-all"
+          className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm cursor-pointer hover:border-slate-400 transition-all"
         >
-          <div className="flex items-center gap-1.5 text-slate-500 text-xs font-semibold">
-            <FileQuestion className="w-4 h-4 text-purple-600" />
+          <div className="flex items-center gap-1.5 text-slate-800 text-xs font-semibold">
+            <FileQuestion className="w-4 h-4 text-slate-700" />
             <span>Returned Items</span>
           </div>
-          <div className="text-lg font-black text-purple-700 mt-1">
+          <div className="text-lg font-black text-slate-900 mt-1">
             {openBackorders.length} Bad Orders
           </div>
-          <div className="text-[11px] text-slate-500 mt-0.5">
+          <div className="text-[11px] text-slate-700 mt-0.5">
             {openBackorders.reduce((a, b) => a + b.qty, 0)} boxes to replace
           </div>
         </div>
@@ -102,17 +102,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="bg-amber-50 rounded-2xl border border-amber-300 shadow-sm overflow-hidden">
         <button
           onClick={() => setIsLowStockOpen(!isLowStockOpen)}
-          className="w-full flex items-center justify-between p-3.5 bg-amber-100/60 text-amber-900 font-bold text-sm hover:bg-amber-100 transition-all"
+          className="w-full flex items-center justify-between p-3.5 bg-amber-100/60 text-slate-900 font-bold text-sm hover:bg-amber-100 transition-all"
         >
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-600" />
             <span>Low Stocks ({lowOrZeroStockItems.length})</span>
           </div>
-          <div className="flex items-center gap-1 text-xs text-amber-800 font-bold">
+          <div className="flex items-center gap-1 text-xs text-slate-900 font-bold">
             <span>{isLowStockOpen ? 'Hide' : 'Show Details'}</span>
             {isLowStockOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </div>
         </button>
+
 
         {isLowStockOpen && (
           <div className="p-3.5 space-y-2 border-t border-amber-200/60">
@@ -176,89 +177,89 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 onClick={handleGlobalResetToZero}
                 className="card-action-grid py-4 px-3 flex flex-col items-center justify-center border-b-4 border-b-rose-600 group hover:bg-rose-50/50"
               >
-                <div className="w-12 h-12 rounded-full border-2 border-rose-200 bg-rose-50 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform text-rose-600">
+                <div className="w-12 h-12 rounded-full border-2 border-slate-300 bg-slate-100 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform text-slate-900">
                   <RotateCcw className="w-6 h-6 stroke-[2.2]" />
                 </div>
                 <span className="font-extrabold text-xs text-slate-900 tracking-tight text-center">
                   Inventory Reset
                 </span>
-                <span className="text-[9px] text-rose-600 font-bold mt-0.5">Reset All to 0</span>
+                <span className="text-[9px] text-slate-700 font-bold mt-0.5">Reset All to 0</span>
               </button>
 
               {/* Auto Add Stocks */}
               <button
                 onClick={() => setActiveTab('ocr_intake')}
-                className="card-action-grid py-4 px-3 flex flex-col items-center justify-center border-b-4 border-b-[#ff6b00] group"
+                className="card-action-grid py-4 px-3 flex flex-col items-center justify-center border-b-4 border-b-slate-700 group"
               >
                 <div className="icon-ring-blue flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
-                  <ScanLine className="w-6 h-6 text-[#0b2b3c] stroke-[2.2]" />
+                  <ScanLine className="w-6 h-6 text-slate-900 stroke-[2.2]" />
                 </div>
                 <span className="font-extrabold text-xs text-slate-900 tracking-tight text-center">
                   Auto Add Stocks
                 </span>
-                <span className="text-[9px] text-slate-500 font-semibold mt-0.5">OCR Invoice Scan</span>
+                <span className="text-[9px] text-slate-700 font-semibold mt-0.5">OCR Invoice Scan</span>
               </button>
 
               {/* Update Stocks */}
               <button
                 onClick={onOpenReceiveModal}
-                className="card-action-grid py-4 px-3 flex flex-col items-center justify-center border-b-4 border-b-cyan-500 group"
+                className="card-action-grid py-4 px-3 flex flex-col items-center justify-center border-b-4 border-b-slate-700 group"
               >
                 <div className="icon-ring-blue flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
-                  <Layers className="w-6 h-6 text-cyan-600 stroke-[2.2]" />
+                  <Layers className="w-6 h-6 text-slate-900 stroke-[2.2]" />
                 </div>
                 <span className="font-extrabold text-xs text-slate-900 tracking-tight text-center">
                   Update Stocks
                 </span>
-                <span className="text-[9px] text-slate-500 font-semibold mt-0.5">Receive & Freezers</span>
+                <span className="text-[9px] text-slate-700 font-semibold mt-0.5">Receive & Freezers</span>
               </button>
 
               {/* Manual Add Stocks */}
               <button
                 onClick={onOpenManualIntake}
-                className="card-action-grid py-4 px-3 flex flex-col items-center justify-center border-b-4 border-b-purple-500 group"
+                className="card-action-grid py-4 px-3 flex flex-col items-center justify-center border-b-4 border-b-slate-700 group"
               >
                 <div className="icon-ring-blue flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
-                  <ArrowDownToLine className="w-6 h-6 text-purple-600 stroke-[2.2]" />
+                  <ArrowDownToLine className="w-6 h-6 text-slate-900 stroke-[2.2]" />
                 </div>
                 <span className="font-extrabold text-xs text-slate-900 tracking-tight text-center">
                   Manual Add Stocks
                 </span>
-                <span className="text-[9px] text-slate-500 font-semibold mt-0.5">Manual Entry</span>
+                <span className="text-[9px] text-slate-700 font-semibold mt-0.5">Manual Entry</span>
               </button>
 
               {/* Set up Delivery Schedule */}
               <button
                 onClick={() => setActiveTab('delivery')}
-                className="card-action-grid py-4 px-3 flex flex-col items-center justify-center border-b-4 border-b-blue-600 group col-span-2"
+                className="card-action-grid py-4 px-3 flex flex-col items-center justify-center border-b-4 border-b-slate-800 group col-span-2"
               >
                 <div className="icon-ring-blue flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
-                  <Truck className="w-6 h-6 text-blue-600 stroke-[2.2]" />
+                  <Truck className="w-6 h-6 text-slate-900 stroke-[2.2]" />
                 </div>
                 <span className="font-extrabold text-xs text-slate-900 tracking-tight text-center">
                   Set up Delivery Schedule
                 </span>
-                <span className="text-[9px] text-slate-500 font-semibold mt-0.5">Delivery Orders & Plans</span>
+                <span className="text-[9px] text-slate-700 font-semibold mt-0.5">Delivery Orders & Plans</span>
               </button>
             </div>
 
             {/* Upcoming Scheduled Deliveries inside Manage Inventory Menu */}
             <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-2">
               <div className="flex items-center justify-between">
-                <h2 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                  <Truck className="w-4 h-4 text-[#ff6b00]" />
+                <h2 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Truck className="w-4 h-4 text-slate-800" />
                   <span>Pending Deliveries ({scheduledDeliveries.length})</span>
                 </h2>
                 <button
                   onClick={() => setActiveTab('delivery')}
-                  className="text-xs font-bold text-[#ff6b00] hover:underline"
+                  className="text-xs font-bold text-slate-900 hover:underline"
                 >
                   Manage
                 </button>
               </div>
 
               {scheduledDeliveries.length === 0 ? (
-                <div className="text-center py-2 text-xs text-slate-400 font-medium">
+                <div className="text-center py-2 text-xs text-slate-700 font-medium">
                   No pending delivery orders found.
                 </div>
               ) : (
@@ -271,9 +272,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     >
                       <div>
                         <div className="font-bold text-slate-900">{plan.client_name}</div>
-                        <div className="text-[10px] text-slate-500">Date: {plan.delivery_date}</div>
+                        <div className="text-[10px] text-slate-700">Date: {plan.delivery_date}</div>
                       </div>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-900 border border-slate-400">
                         {plan.status}
                       </span>
                     </div>
@@ -285,18 +286,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
             {/* Recent Activity Audit Logs inside Manage Inventory Menu */}
             <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-2">
               <div className="flex items-center justify-between">
-                <h2 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                  <History className="w-4 h-4 text-blue-600" />
+                <h2 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <History className="w-4 h-4 text-slate-800" />
                   <span>Recent Stock Audit Log</span>
                 </h2>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setIsResetAuditModalOpen(true)}
-                    className="text-[11px] font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1 px-2 py-0.5 rounded bg-rose-50 border border-rose-200"
+                    className="text-[11px] font-bold text-slate-900 hover:bg-slate-100 flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 border border-slate-300"
                     title="Reset & Clear Audit Logs (OTP: 1201)"
                   >
-                    <Trash2 className="w-3 h-3 text-rose-600" />
+                    <Trash2 className="w-3 h-3 text-slate-800" />
                     <span>Clear</span>
+
                   </button>
                   <button
                     onClick={() => setActiveTab('history')}

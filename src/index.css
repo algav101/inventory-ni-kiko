@@ -35,73 +35,96 @@
   transition: background-color 0.4s ease-in-out, color 0.4s ease-in-out;
 }
 
-/* Light Mode Contrast Overrides */
-.mobile-shell-container:not(.dark-mode) {
-  background: #f1f5f9;
-  color: #0f172a;
-}
+/* Strict Black & White Typography Below Header Title */
 
+/* Light Mode Typography Below Header: Strictly Black Font for 100% Readability */
 .mobile-shell-container:not(.dark-mode) main {
   background: #f1f5f9 !important;
+  color: #000000 !important;
 }
 
-.mobile-shell-container:not(.dark-mode) .bg-white {
-  background-color: #ffffff !important;
-  border-color: #cbd5e1 !important;
-  color: #0f172a !important;
+.mobile-shell-container:not(.dark-mode) main *,
+.mobile-shell-container:not(.dark-mode) main span,
+.mobile-shell-container:not(.dark-mode) main p,
+.mobile-shell-container:not(.dark-mode) main div,
+.mobile-shell-container:not(.dark-mode) main h1,
+.mobile-shell-container:not(.dark-mode) main h2,
+.mobile-shell-container:not(.dark-mode) main h3,
+.mobile-shell-container:not(.dark-mode) main h4,
+.mobile-shell-container:not(.dark-mode) main button,
+.mobile-shell-container:not(.dark-mode) main strong,
+.mobile-shell-container:not(.dark-mode) main label,
+.mobile-shell-container:not(.dark-mode) main input,
+.mobile-shell-container:not(.dark-mode) main select {
+  color: #000000 !important;
 }
 
-.mobile-shell-container:not(.dark-mode) .text-slate-900,
-.mobile-shell-container:not(.dark-mode) .text-slate-800,
-.mobile-shell-container:not(.dark-mode) .text-slate-700 {
-  color: #0f172a !important;
-}
-
-.mobile-shell-container:not(.dark-mode) .text-slate-500,
-.mobile-shell-container:not(.dark-mode) .text-slate-600 {
+.mobile-shell-container:not(.dark-mode) main .text-slate-500,
+.mobile-shell-container:not(.dark-mode) main .text-slate-400,
+.mobile-shell-container:not(.dark-mode) main .text-slate-600 {
   color: #334155 !important;
 }
 
-.mobile-shell-container:not(.dark-mode) .text-slate-400 {
-  color: #475569 !important;
+.mobile-shell-container:not(.dark-mode) main .bg-white {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #000000 !important;
 }
 
-.mobile-shell-container:not(.dark-mode) .bg-slate-50 {
+.mobile-shell-container:not(.dark-mode) main .bg-slate-50 {
   background-color: #f8fafc !important;
   border-color: #e2e8f0 !important;
 }
 
-/* Dark Mode Contrast Overrides */
-.mobile-shell-container.dark-mode {
-  background: #091724;
-  color: #f1f5f9;
+.mobile-shell-container:not(.dark-mode) main .bg-amber-50 {
+  background-color: #fffbeb !important;
+  border-color: #fde68a !important;
 }
 
+/* Dark Mode Typography Below Header: Strictly White Font for 100% Readability */
 .mobile-shell-container.dark-mode main {
   background: #091724 !important;
+  color: #ffffff !important;
 }
 
-.mobile-shell-container.dark-mode .bg-white {
+.mobile-shell-container.dark-mode main *,
+.mobile-shell-container.dark-mode main span,
+.mobile-shell-container.dark-mode main p,
+.mobile-shell-container.dark-mode main div,
+.mobile-shell-container.dark-mode main h1,
+.mobile-shell-container.dark-mode main h2,
+.mobile-shell-container.dark-mode main h3,
+.mobile-shell-container.dark-mode main h4,
+.mobile-shell-container.dark-mode main button,
+.mobile-shell-container.dark-mode main strong,
+.mobile-shell-container.dark-mode main label,
+.mobile-shell-container.dark-mode main input,
+.mobile-shell-container.dark-mode main select {
+  color: #ffffff !important;
+}
+
+.mobile-shell-container.dark-mode main .text-slate-500,
+.mobile-shell-container.dark-mode main .text-slate-400,
+.mobile-shell-container.dark-mode main .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+.mobile-shell-container.dark-mode main .bg-white {
   background-color: #0f2434 !important;
   border-color: #1e3a52 !important;
-  color: #f1f5f9 !important;
+  color: #ffffff !important;
 }
 
-.mobile-shell-container.dark-mode .text-slate-900,
-.mobile-shell-container.dark-mode .text-slate-800,
-.mobile-shell-container.dark-mode .text-slate-700 {
-  color: #f8fafc !important;
-}
-
-.mobile-shell-container.dark-mode .text-slate-500,
-.mobile-shell-container.dark-mode .text-slate-400 {
-  color: #94a3b8 !important;
-}
-
-.mobile-shell-container.dark-mode .bg-slate-50 {
+.mobile-shell-container.dark-mode main .bg-slate-50 {
   background-color: #0b1d2c !important;
   border-color: #1a354b !important;
 }
+
+.mobile-shell-container.dark-mode main .bg-amber-50 {
+  background-color: #1a2318 !important;
+  border-color: #2e3d23 !important;
+}
+
 
 
 @media (min-width: 640px) {

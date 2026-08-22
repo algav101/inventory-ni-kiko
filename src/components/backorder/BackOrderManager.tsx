@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/database';
 import type { BackOrder, BackOrderStatus } from '../../types';
-import { FileQuestion, Plus, X, Truck, AlertCircle, Box } from 'lucide-react';
+import { FileQuestion, Plus, X, Truck, AlertCircle, Box, Trash2 } from 'lucide-react';
+
 
 export const BackOrderManager: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -60,6 +61,14 @@ export const BackOrderManager: React.FC = () => {
     setRemarks('');
   };
 
+  const handleDeleteBO = async (id?: number) => {
+    if (!id) return;
+    const confirmDelete = window.confirm('Delete this returned item / bad order record?');
+    if (confirmDelete) {
+      await db.backOrders.delete(id);
+    }
+  };
+
   const handleFulfillBO = async (bo: BackOrder) => {
     const deliveryDate = new Date(Date.now() + 86400000).toISOString().split('T')[0];
 
@@ -68,7 +77,7 @@ export const BackOrderManager: React.FC = () => {
       client_name: bo.client_name,
       delivery_date: deliveryDate,
       status: 'SCHEDULED',
-      notes: `Fulfilled from Backorder #${bo.id}: ${bo.remarks}`,
+      notes: `Fulfilled from Returned Item #${bo.id}: ${bo.remarks}`,
       created_at: new Date().toISOString(),
     });
 
@@ -96,37 +105,37 @@ export const BackOrderManager: React.FC = () => {
       linked_delivery_id: planId,
     });
 
-    alert(`Back Order #${bo.id} converted & linked to Delivery Plan #${planId} scheduled for ${deliveryDate}!`);
+    alert(`Returned Item #${bo.id} replacement linked to Delivery Plan #${planId} scheduled for ${deliveryDate}!`);
   };
 
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 font-bold text-base text-white">
-          <FileQuestion className="w-5 h-5 text-purple-400" />
-          <span>Back Order (BO) Manager</span>
+        <div className="flex items-center gap-2 font-bold text-base text-[#0b2b3c]">
+          <FileQuestion className="w-5 h-5 text-purple-600" />
+          <span>Returned Items (Bad Orders)</span>
         </div>
 
         <button
           onClick={() => setShowCreateModal(true)}
-          className="btn-touch bg-purple-600 hover:bg-purple-500 text-white rounded-xl px-3 text-xs font-bold shrink-0 flex items-center gap-1 shadow-lg shadow-purple-950/40"
+          className="btn-touch bg-purple-600 hover:bg-purple-500 text-white rounded-xl px-3 text-xs font-bold shrink-0 flex items-center gap-1 shadow-md"
         >
           <Plus className="w-4 h-4" />
-          <span>Log BO</span>
+          <span>Log Returned Item</span>
         </button>
       </div>
 
       {/* Demand explanation banner */}
-      <div className="p-3 rounded-xl bg-purple-950/40 border border-purple-800/40 text-xs text-purple-300 flex items-start gap-2">
-        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+      <div className="p-3 rounded-xl bg-purple-50 border border-purple-200 text-xs text-purple-900 flex items-start gap-2">
+        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-purple-600" />
         <div>
-          <strong>Demand-Only Model:</strong> Back order quantities track pending customer demand and do <em>NOT</em> deduct from current stock until linked to a delivery plan and fulfilled.
+          <strong>Bad Order Replacements:</strong> Returned items represent bad orders required to be replaced for fresh stock. Replacements deduct from current inventory when fulfilled and scheduled for delivery.
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-bold">
+      <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 text-xs font-bold shadow-xs">
         {(['OPEN', 'FULFILLED', 'ALL'] as const).map(st => (
           <button
             key={st}
@@ -134,10 +143,10 @@ export const BackOrderManager: React.FC = () => {
             className={`flex-1 py-1.5 rounded-lg transition-all ${
               statusFilter === st
                 ? 'bg-purple-600 text-white shadow'
-                : 'text-slate-400 hover:text-slate-200'
+                : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            {st}
+            {st === 'OPEN' ? 'PENDING' : st}
           </button>
         ))}
       </div>
@@ -145,8 +154,8 @@ export const BackOrderManager: React.FC = () => {
       {/* List */}
       <div className="space-y-2.5">
         {filteredOrders.length === 0 ? (
-          <div className="card-glass p-8 text-center text-slate-400 text-sm">
-            No back orders found matching filter "{statusFilter}".
+          <div className="bg-white p-8 text-center text-slate-400 text-sm rounded-2xl border border-slate-200">
+            No returned items found matching filter "{statusFilter}".
           </div>
         ) : (
           filteredOrders.map(bo => {
@@ -154,57 +163,66 @@ export const BackOrderManager: React.FC = () => {
             return (
               <div
                 key={bo.id}
-                className={`card-glass p-4 border ${
+                className={`p-4 rounded-2xl border bg-white shadow-xs ${
                   bo.status === 'OPEN'
-                    ? 'border-purple-500/40 bg-slate-900/90'
-                    : 'border-slate-800 bg-slate-900/50'
+                    ? 'border-purple-300'
+                    : 'border-slate-200'
                 }`}
               >
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-sm text-white">{bo.item_name}</h3>
+                      <h3 className="font-bold text-sm text-slate-900">{bo.item_name}</h3>
                       <span
                         className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
                           bo.status === 'OPEN'
-                            ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
-                            : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                            ? 'bg-purple-100 text-purple-800 border border-purple-300'
+                            : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                         }`}
                       >
-                        {bo.status}
+                        {bo.status === 'OPEN' ? 'PENDING REPLACEMENT' : bo.status}
                       </span>
                     </div>
-                    <div className="text-xs text-slate-400 mt-1">
-                      Client: <strong className="text-slate-200">{bo.client_name}</strong>
+                    <div className="text-xs text-slate-600 mt-1">
+                      Client / Store: <strong className="text-slate-900">{bo.client_name}</strong>
                     </div>
-                    {bo.remarks && <div className="text-[11px] text-slate-500 mt-0.5">Remarks: {bo.remarks}</div>}
+                    {bo.remarks && <div className="text-[11px] text-slate-500 mt-0.5">Reason / Note: {bo.remarks}</div>}
                   </div>
 
-                  <div className="text-right">
-                    <div className="text-lg font-extrabold text-purple-300">
-                      {bo.qty} <span className="text-xs font-normal text-slate-400">BOXES</span>
+                  <div className="text-right flex flex-col items-end">
+                    <div className="text-lg font-extrabold text-purple-700">
+                      {bo.qty} <span className="text-xs font-normal text-slate-500">BOXES</span>
                     </div>
-                    <div className="text-[10px] text-amber-300 font-bold flex items-center justify-end gap-1 mt-0.5">
+                    <div className="text-[10px] text-amber-700 font-bold flex items-center justify-end gap-1 mt-0.5">
                       <Box className="w-3 h-3" />
                       {totalPcs} total pcs
                     </div>
-                    <div className="text-[10px] text-slate-500 mt-0.5">
+                    <div className="text-[10px] text-slate-400 mt-0.5">
                       {new Date(bo.created_at).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
 
-                {bo.status === 'OPEN' && (
-                  <div className="mt-3 pt-2 border-t border-slate-800 flex justify-end">
+                <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+                  <button
+                    onClick={() => handleDeleteBO(bo.id)}
+                    className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 text-xs font-bold flex items-center gap-1 transition-all"
+                    title="Delete Returned Item Record"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete</span>
+                  </button>
+
+                  {bo.status === 'OPEN' && (
                     <button
                       onClick={() => handleFulfillBO(bo)}
                       className="btn-touch bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-1 rounded-xl shadow flex items-center gap-1"
                     >
                       <Truck className="w-3.5 h-3.5" />
-                      <span>Fulfill & Link to Delivery</span>
+                      <span>Replace & Schedule Delivery</span>
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             );
           })

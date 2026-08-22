@@ -6,12 +6,10 @@ import {
   FileQuestion,
   ScanLine,
   Menu,
-  Globe,
   Network,
   MapPin,
   X,
   RotateCcw,
-  PackageCheck,
   History,
 } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -23,15 +21,15 @@ interface MobileShellProps {
   children: React.ReactNode;
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  onOpenReceiveModal: () => void;
+  onOpenReceiveModal?: () => void;
 }
 
 export const MobileShell: React.FC<MobileShellProps> = ({
   children,
   activeTab,
   setActiveTab,
-  onOpenReceiveModal,
 }) => {
+
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -69,13 +67,16 @@ export const MobileShell: React.FC<MobileShellProps> = ({
       <header className="sticky top-0 z-30 bg-[#0b2b3c] text-white shadow-lg border-b border-[#133e54]">
         {/* Top Control Bar: Hamburger, Timestamp, Sync Globe */}
         <div className="flex items-center justify-between px-3.5 pt-2.5 pb-1 text-slate-200">
-          <button
-            onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-            className="p-1 rounded-md hover:bg-white/10 active:scale-95 transition-all text-white"
-            title="Open Menu"
-          >
-            <Menu className="w-5 h-5 stroke-[2.5]" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+              className="p-1 rounded-md hover:bg-white/10 active:scale-95 transition-all text-white"
+              title="Open Menu"
+            >
+              <Menu className="w-5 h-5 stroke-[2.5]" />
+            </button>
+            <span className="font-bold text-sm text-white tracking-tight">Kiko Machine</span>
+          </div>
 
           {/* Timestamp string matching reference: 2021-10-05T08:45:46 */}
           <div className="font-mono text-xs sm:text-sm font-semibold tracking-wider text-slate-100">
@@ -83,20 +84,26 @@ export const MobileShell: React.FC<MobileShellProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5 text-blue-300">
-            <Globe className="w-4 h-4 text-sky-400" />
-            <span className="text-[10px] font-bold tracking-tight uppercase text-sky-300">SYNC</span>
+            <button
+              onClick={handleGlobalResetToZero}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-950/80 border border-rose-800 text-rose-300 hover:bg-rose-900 text-[11px] font-bold transition-all shadow-sm"
+              title="Reset all inventory counts to 0"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span> Inventory Reset </span>
+            </button>
           </div>
         </div>
 
         {/* User Greeting Bar */}
-        <div className="px-4 pt-1.5 pb-1">
+        <div className="px-4 pt-1 pb-1">
           <h1 className="text-sm sm:text-base font-black tracking-wide uppercase text-white flex items-center gap-1.5">
             WELCOME BACK, <span className="text-[#ff6b00]">ADMIN</span>
           </h1>
         </div>
 
         {/* Sub-info Row: Terminal Tag & Storage Location */}
-        <div className="flex items-center justify-between px-4 pb-3 pt-0.5 text-[11px] font-bold tracking-wide">
+        <div className="flex items-center justify-between px-4 pb-2.5 pt-0.5 text-[11px] font-bold tracking-wide">
           <div className="flex items-center gap-1 text-slate-300 underline decoration-slate-400">
             <Network className="w-3.5 h-3.5 text-blue-400" />
             <span>T10.9</span>
@@ -124,7 +131,7 @@ export const MobileShell: React.FC<MobileShellProps> = ({
                     K
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm text-white">Kiko Inventory</h3>
+                    <h3 className="font-bold text-sm text-white">Kiko Machine</h3>
                     <p className="text-[11px] text-slate-300">Admin Terminal • Coldstorage</p>
                   </div>
                 </div>
@@ -173,7 +180,7 @@ export const MobileShell: React.FC<MobileShellProps> = ({
                   }`}
                 >
                   <ScanLine className="w-4 h-4" />
-                  <span>GRN / OCR Scan</span>
+                  <span>Auto Add Stocks</span>
                 </button>
 
                 <button
@@ -186,7 +193,7 @@ export const MobileShell: React.FC<MobileShellProps> = ({
                   }`}
                 >
                   <Truck className="w-4 h-4" />
-                  <span>Delivery Orders</span>
+                  <span>Set up Delivery Schedule</span>
                 </button>
 
                 <button
@@ -199,7 +206,7 @@ export const MobileShell: React.FC<MobileShellProps> = ({
                   }`}
                 >
                   <FileQuestion className="w-4 h-4" />
-                  <span>Back Orders</span>
+                  <span>Returned Items</span>
                 </button>
 
                 <button
@@ -219,19 +226,11 @@ export const MobileShell: React.FC<MobileShellProps> = ({
 
             <div className="pt-4 border-t border-slate-700/60 space-y-2">
               <button
-                onClick={onOpenReceiveModal}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all shadow-md"
-              >
-                <PackageCheck className="w-4 h-4" />
-                <span>Receive Stock</span>
-              </button>
-
-              <button
                 onClick={handleGlobalResetToZero}
                 className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-rose-950/80 border border-rose-800 text-rose-300 hover:bg-rose-900 font-bold text-xs transition-all"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset All to 0</span>
+                <span> Inventory Reset </span>
               </button>
             </div>
           </div>
@@ -278,7 +277,7 @@ export const MobileShell: React.FC<MobileShellProps> = ({
             className="flex flex-col items-center justify-center py-1 rounded-xl bg-gradient-to-tr from-[#ff6b00] to-amber-500 text-white font-bold shadow-lg shadow-amber-600/30 -mt-3 active:scale-95 transition-all"
           >
             <ScanLine className="w-6 h-6" />
-            <span className="text-[10px]">GRN Scan</span>
+            <span className="text-[10px]">Auto Add</span>
           </button>
 
           <button
@@ -302,7 +301,7 @@ export const MobileShell: React.FC<MobileShellProps> = ({
             }`}
           >
             <FileQuestion className="w-5 h-5 mb-0.5" />
-            <span className="text-[10px]">BOs</span>
+            <span className="text-[10px]">Returned</span>
             {openBoCount > 0 && (
               <span className="absolute top-1 right-2.5 min-w-4 h-4 px-1 rounded-full bg-purple-500 text-[9px] text-white font-bold flex items-center justify-center">
                 {openBoCount}

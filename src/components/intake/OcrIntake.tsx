@@ -134,8 +134,8 @@ export const OcrIntake: React.FC<OcrIntakeProps> = ({ onFinishCommit, onOpenManu
         continue;
       }
 
-      // Strategy 1: Full 7-column structured invoice line regex (QTY, UNIT, CODE, DESCRIPTION, SIZE, PRICE, AMOUNT)
-      const match7 = line.match(/^(\d+)\s+([A-Za-z]+)\s+([A-Za-z0-9\-_]+)\s+(.+?)\s+(\d+(?:\.\d+)?\s*(?:KG|G|LB|OZ|g|kg)?)\s+([\d,]+\.?\d*)\s+([\d,]+\.?\d*)$/i);
+      // Strategy 1: 7-column structured line regex requiring explicit weight/size unit (KG|G|g|kg|LB|OZ)
+      const match7 = line.match(/^(\d+)\s+([A-Za-z]+)\s+([A-Za-z0-9\-_]+)\s+(.+?)\s+(\d+(?:\.\d+)?\s*(?:KG|G|g|kg|LB|OZ))\s+([\d,]+\.?\d*)\s+([\d,]+\.?\d*)$/i);
 
       // Strategy 2: 6-column structured line regex (without explicit size column)
       const match6 = line.match(/^(\d+)\s+([A-Za-z]+)\s+([A-Za-z0-9\-_]+)\s+(.+?)\s+([\d,]+\.?\d*)\s+([\d,]+\.?\d*)$/i);
@@ -171,8 +171,9 @@ export const OcrIntake: React.FC<OcrIntakeProps> = ({ onFinishCommit, onOpenManu
 
         if (!codeMatches || codeMatches.length === 0) continue;
 
-        // Find supplier code (digits like 4460, 4462, 4463, 1435, 5105, 5098, 3786, 1116, 1118, 3176, 4392, 474, 5009, 3912, 3913, 4292, 4721, 4395, 4979, 4455, 403, 5409 or CDO-*)
-        const potentialCode = codeMatches.find(c => /^\d{3,5}$/.test(c) || /^[A-Z]{2,4}-/.test(c)) || codeMatches[0];
+        // Smart Code Picker: First check if candidate matches any existing database SKU code
+        const registeredSKU = codeMatches.find(c => allItems.some(it => it.sku_code.toUpperCase() === c.toUpperCase()));
+        const potentialCode = registeredSKU || codeMatches.find(c => /^\d{3,5}$/.test(c) || /^[A-Z]{2,4}-/.test(c)) || codeMatches[0];
 
         if (!potentialCode || potentialCode.length < 3 || /total|amount|price|unit/i.test(potentialCode)) {
           continue;

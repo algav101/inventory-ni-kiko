@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, correctStockQuantity } from '../../db/database';
-import { Edit3, X } from 'lucide-react';
+import { db, correctStockQuantity, logTransaction } from '../../db/database';
+import { Edit3, X, Trash2 } from 'lucide-react';
 
 interface StockCorrectionModalProps {
   itemId: number;
@@ -31,6 +31,28 @@ export const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
 
     await correctStockQuantity(itemId, parsedNewQty, reason.trim());
     onClose();
+  };
+
+  const handleDeleteItem = async () => {
+    const confirmDelete = window.confirm(
+      `DELETE PRODUCT / SKU #${item.sku_code}?\n\nAre you sure you want to permanently delete "${item.name} (${item.size})"? This action cannot be undone.`
+    );
+
+    if (confirmDelete) {
+      await logTransaction(
+        itemId,
+        'MANUAL_CORRECTION',
+        -currentQty,
+        0,
+        item.latest_unit_cost,
+        `Deleted SKU #${item.sku_code} (${item.name}) from inventory`
+      );
+
+      await db.items.delete(itemId);
+      await db.supplierItemCodes.where('item_id').equals(itemId).delete();
+      alert(`Product SKU #${item.sku_code} (${item.name}) has been deleted.`);
+      onClose();
+    }
   };
 
   return (
@@ -92,21 +114,32 @@ export const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+          <div className="flex items-center justify-between pt-2 border-t border-slate-800">
             <button
               type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-200"
+              onClick={handleDeleteItem}
+              className="px-3 py-2 rounded-xl text-xs font-bold text-rose-400 hover:text-white hover:bg-rose-950/80 border border-rose-800/50 flex items-center gap-1"
             >
-              Cancel
+              <Trash2 className="w-4 h-4" />
+              <span>Delete SKU</span>
             </button>
-            <button
-              type="submit"
-              disabled={!reason.trim()}
-              className="btn-touch px-5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-lg shadow-amber-950/40"
-            >
-              Commit Correction
-            </button>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-3 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!reason.trim()}
+                className="btn-touch px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-lg shadow-amber-950/40"
+              >
+                Commit Correction
+              </button>
+            </div>
           </div>
         </form>
       </div>

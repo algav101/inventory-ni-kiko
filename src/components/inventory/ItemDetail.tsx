@@ -12,6 +12,7 @@ import {
   Building2,
   Snowflake,
   ArrowRightLeft,
+  Trash2,
 } from 'lucide-react';
 
 interface ItemDetailProps {
@@ -101,16 +102,40 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({
     }
   };
 
+  const handleDeleteItem = async () => {
+    const confirmDelete = window.confirm(
+      `DELETE PRODUCT / SKU #${item.sku_code}?\n\nAre you sure you want to permanently delete "${item.name} (${item.size})"? This action cannot be undone.`
+    );
+
+    if (confirmDelete) {
+      await db.items.delete(itemId);
+      await db.supplierItemCodes.where('item_id').equals(itemId).delete();
+      alert(`Product SKU #${item.sku_code} (${item.name}) has been deleted.`);
+      onBack();
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Top Header Navigation */}
-      <button
-        onClick={onBack}
-        className="flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-slate-200 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span>Back to Inventory List</span>
-      </button>
+      <div className="flex items-center justify-between">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-slate-200 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Inventory List</span>
+        </button>
+
+        <button
+          onClick={handleDeleteItem}
+          className="px-2.5 py-1 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-800/60 text-rose-300 font-bold text-xs flex items-center gap-1 shadow"
+          title="Delete SKU / Product"
+        >
+          <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+          <span>Delete SKU</span>
+        </button>
+      </div>
 
       {/* Main Item Card Header */}
       <div className={`card-glass p-4 border ${isLowStock ? 'border-amber-500/40 bg-slate-900/90' : 'border-slate-800'}`}>
@@ -284,21 +309,29 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({
       </div>
 
       {/* Primary Action Buttons for Stock Management */}
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-3 gap-2">
         <button
           onClick={() => onOpenReceiveModal(itemId)}
-          className="btn-touch bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-950/40 flex items-center justify-center gap-2"
+          className="btn-touch bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-950/40 flex items-center justify-center gap-1 text-xs"
         >
-          <PackageCheck className="w-5 h-5 text-emerald-100" />
-          <span>Receive Stock</span>
+          <PackageCheck className="w-4 h-4 text-emerald-100" />
+          <span>Receive</span>
         </button>
 
         <button
           onClick={() => onOpenCorrectionModal(itemId)}
-          className="btn-touch bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center gap-2"
+          className="btn-touch bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center gap-1 text-xs"
         >
-          <Edit3 className="w-5 h-5 text-amber-400" />
+          <Edit3 className="w-4 h-4 text-amber-400" />
           <span>Correct Qty</span>
+        </button>
+
+        <button
+          onClick={handleDeleteItem}
+          className="btn-touch bg-rose-950/90 hover:bg-rose-900 text-rose-300 border border-rose-800/60 flex items-center justify-center gap-1 text-xs font-bold"
+        >
+          <Trash2 className="w-4 h-4 text-rose-400" />
+          <span>Delete SKU</span>
         </button>
       </div>
 

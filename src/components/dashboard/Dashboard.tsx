@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, resetAllInventoryToZero } from '../../db/database';
+import { ResetAuditLogModal } from '../history/ResetAuditLogModal';
 import {
   AlertTriangle,
   FileQuestion,
@@ -13,6 +14,7 @@ import {
   ChevronRight,
   RotateCcw,
   Box,
+  Trash2,
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -28,6 +30,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenManualIntake,
   onSelectItem,
 }) => {
+  const [isResetAuditModalOpen, setIsResetAuditModalOpen] = useState(false);
   const items = useLiveQuery(() => db.items.toArray()) ?? [];
   const openBackorders = useLiveQuery(() => db.backOrders.where('status').equals('OPEN').toArray()) ?? [];
   const deliveryPlans = useLiveQuery(() => db.deliveryPlans.toArray()) ?? [];
@@ -221,13 +224,31 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <History className="w-4 h-4 text-blue-400" />
             <span>Recent Stock Audit Log</span>
           </h2>
-          <button
-            onClick={() => setActiveTab('history')}
-            className="text-xs font-medium text-blue-400 hover:underline"
-          >
-            Full Trail
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsResetAuditModalOpen(true)}
+              className="text-xs font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1 px-2 py-0.5 rounded bg-rose-950/40 border border-rose-900/50"
+              title="Reset & Clear Audit Trail Logs (OTP: 1201)"
+            >
+              <Trash2 className="w-3 h-3 text-rose-400" />
+              <span>Reset Logs</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className="text-xs font-medium text-blue-400 hover:underline"
+            >
+              Full Trail
+            </button>
+          </div>
         </div>
+
+        <ResetAuditLogModal
+          isOpen={isResetAuditModalOpen}
+          onClose={() => setIsResetAuditModalOpen(false)}
+          onSuccess={() => {
+            alert('Audit trail logs have been reset & cleared.');
+          }}
+        />
 
         <div className="space-y-2">
           {recentTransactions.map(tx => (

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/database';
 import type { TransactionType } from '../../types';
-import { History, Search } from 'lucide-react';
+import { History, Search, Trash2 } from 'lucide-react';
+import { ResetAuditLogModal } from './ResetAuditLogModal';
 
 const TRANSACTION_TYPES: ('ALL' | TransactionType)[] = [
   'ALL',
@@ -17,6 +18,7 @@ const TRANSACTION_TYPES: ('ALL' | TransactionType)[] = [
 export const AuditTrailView: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<'ALL' | TransactionType>('ALL');
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
   const transactions = useLiveQuery(() => db.transactions.orderBy('id').reverse().toArray()) ?? [];
 
@@ -38,8 +40,26 @@ export const AuditTrailView: React.FC = () => {
           <History className="w-5 h-5 text-blue-400" />
           <span>Global Audit Trail</span>
         </div>
-        <span className="text-xs text-slate-400">{filteredTransactions.length} records</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-400">{filteredTransactions.length} records</span>
+          <button
+            onClick={() => setIsResetModalOpen(true)}
+            className="btn-touch px-2.5 py-1 bg-rose-600/90 hover:bg-rose-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow"
+            title="Reset & Clear Audit Trail Logs"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Reset Logs</span>
+          </button>
+        </div>
       </div>
+
+      <ResetAuditLogModal
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        onSuccess={() => {
+          alert('Audit trail logs have been reset & cleared.');
+        }}
+      />
 
       <div className="space-y-2">
         <div className="relative">

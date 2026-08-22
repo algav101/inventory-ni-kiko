@@ -19,12 +19,14 @@ interface MobileShellProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onOpenReceiveModal?: () => void;
+  onReturnToLanding?: () => void;
 }
 
 export const MobileShell: React.FC<MobileShellProps> = ({
   children,
   activeTab,
   setActiveTab,
+  onReturnToLanding,
 }) => {
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -76,7 +78,11 @@ export const MobileShell: React.FC<MobileShellProps> = ({
 
 
           {/* App Title with Domain Master AL Logo & Cursive Subtitle */}
-          <div className="flex items-center gap-2">
+          <div
+            onClick={onReturnToLanding}
+            className="flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity"
+            title="Return to Welcome Landing Screen"
+          >
             {/* Uploaded Domain Master AL Emblem Logo */}
             <img
               src="/domain-master-al-logo.jpg"
@@ -95,6 +101,7 @@ export const MobileShell: React.FC<MobileShellProps> = ({
               </div>
             </div>
           </div>
+
 
           {/* Clean Top Right Accent */}
           <div className="w-6"></div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { seedDatabaseIfEmpty } from './db/database';
 import { MobileShell } from './components/layout/MobileShell';
+import { LandingPage } from './components/landing/LandingPage';
 import { Dashboard } from './components/dashboard/Dashboard';
 import { InventoryList } from './components/inventory/InventoryList';
 import { ItemDetail } from './components/inventory/ItemDetail';
@@ -13,6 +14,7 @@ import { ReceiveStockModal } from './components/stock/ReceiveStockModal';
 import { StockCorrectionModal } from './components/stock/StockCorrectionModal';
 
 export function App() {
+  const [showLanding, setShowLanding] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
@@ -42,6 +44,10 @@ export function App() {
     setIsCorrectionModalOpen(true);
   };
 
+  if (showLanding) {
+    return <LandingPage onStart={() => setShowLanding(false)} />;
+  }
+
   return (
     <MobileShell
       activeTab={activeTab}
@@ -50,7 +56,9 @@ export function App() {
         setActiveTab(tab);
       }}
       onOpenReceiveModal={() => handleOpenReceiveModal(selectedItemId ?? undefined)}
+      onReturnToLanding={() => setShowLanding(true)}
     >
+
       {/* Tab Routing */}
       {selectedItemId !== null ? (
         <ItemDetail

@@ -35,13 +35,15 @@
   transition: background-color 0.4s ease-in-out, color 0.4s ease-in-out;
 }
 
-/* Clean Theme Typography & High-Contrast Card Styles */
+/* Comprehensive Theme Typography & Contrast Rules */
 
+/* LIGHT MODE OVERRIDES */
 .mobile-shell-container:not(.dark-mode) main {
   background: #f1f5f9 !important;
-  color: #0f172a;
+  color: #0f172a !important;
 }
 
+/* Light mode card backgrounds */
 .mobile-shell-container:not(.dark-mode) .bg-white,
 .mobile-shell-container:not(.dark-mode) .card-glass,
 .mobile-shell-container:not(.dark-mode) .card-action-grid {
@@ -50,28 +52,57 @@
   color: #0f172a !important;
 }
 
-.mobile-shell-container:not(.dark-mode) .text-slate-900 {
+.mobile-shell-container:not(.dark-mode) .bg-slate-50 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+.mobile-shell-container:not(.dark-mode) .bg-slate-800,
+.mobile-shell-container:not(.dark-mode) .bg-slate-900 {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
   color: #0f172a !important;
 }
 
-.mobile-shell-container:not(.dark-mode) .text-slate-800 {
-  color: #1e293b !important;
+/* Light mode text contrast fixes */
+.mobile-shell-container:not(.dark-mode) .text-white {
+  color: #0b2b3c !important;
 }
 
-.mobile-shell-container:not(.dark-mode) .text-slate-700,
-.mobile-shell-container:not(.dark-mode) .text-slate-600 {
+.mobile-shell-container:not(.dark-mode) .text-slate-100,
+.mobile-shell-container:not(.dark-mode) .text-slate-200,
+.mobile-shell-container:not(.dark-mode) .text-slate-300,
+.mobile-shell-container:not(.dark-mode) .text-slate-400 {
   color: #334155 !important;
 }
 
 .mobile-shell-container:not(.dark-mode) .text-slate-500,
-.mobile-shell-container:not(.dark-mode) .text-slate-400 {
-  color: #64748b !important;
+.mobile-shell-container:not(.dark-mode) .text-slate-600 {
+  color: #475569 !important;
 }
 
-/* Dark Mode High Contrast Card Overrides */
+.mobile-shell-container:not(.dark-mode) .text-slate-700,
+.mobile-shell-container:not(.dark-mode) .text-slate-800,
+.mobile-shell-container:not(.dark-mode) .text-slate-900 {
+  color: #0f172a !important;
+}
+
+.mobile-shell-container:not(.dark-mode) input,
+.mobile-shell-container:not(.dark-mode) select,
+.mobile-shell-container:not(.dark-mode) textarea {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.mobile-shell-container:not(.dark-mode) input::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* DARK MODE OVERRIDES */
 .mobile-shell-container.dark-mode main {
   background: #091724 !important;
-  color: #f8fafc;
+  color: #f8fafc !important;
 }
 
 .mobile-shell-container.dark-mode .bg-white,
@@ -87,9 +118,11 @@
   border-color: #1a354b !important;
 }
 
-.mobile-shell-container.dark-mode .bg-amber-50 {
-  background-color: #182619 !important;
-  border-color: #2a4027 !important;
+.mobile-shell-container.dark-mode .bg-slate-800,
+.mobile-shell-container.dark-mode .bg-slate-900 {
+  background-color: #0f2434 !important;
+  border-color: #1e3a52 !important;
+  color: #f8fafc !important;
 }
 
 .mobile-shell-container.dark-mode .text-slate-900,
@@ -100,9 +133,19 @@
 
 .mobile-shell-container.dark-mode .text-slate-600,
 .mobile-shell-container.dark-mode .text-slate-500,
-.mobile-shell-container.dark-mode .text-slate-400 {
+.mobile-shell-container.dark-mode .text-slate-400,
+.mobile-shell-container.dark-mode .text-slate-300 {
   color: #cbd5e1 !important;
 }
+
+.mobile-shell-container.dark-mode input,
+.mobile-shell-container.dark-mode select,
+.mobile-shell-container.dark-mode textarea {
+  background-color: #0b1d2c !important;
+  border-color: #1a354b !important;
+  color: #f8fafc !important;
+}
+
 
 
 

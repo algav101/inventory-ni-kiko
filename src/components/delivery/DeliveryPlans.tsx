@@ -219,19 +219,20 @@ export const DeliveryPlans: React.FC = () => {
     <div className="space-y-4">
       {/* Title & Action Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 font-bold text-base text-white">
-          <Truck className="w-5 h-5 text-amber-400" />
-          <span>Delivery Plans & Fulfillment</span>
+        <div className="flex items-center gap-2 font-bold text-base text-[#0b2b3c] dark:text-white">
+          <Truck className="w-5 h-5 text-amber-500" />
+          <span className="font-extrabold tracking-wide">Delivery Plans & Fulfillment</span>
         </div>
 
         <button
           onClick={() => setShowCreateModal(true)}
-          className="btn-touch bg-amber-600 hover:bg-amber-500 text-white rounded-xl px-3 py-2 text-xs font-bold shrink-0 flex items-center gap-1 shadow-lg shadow-amber-950/40"
+          className="btn-touch bg-amber-600 hover:bg-amber-500 text-white rounded-xl px-3 py-2 text-xs font-bold shrink-0 flex items-center gap-1 shadow-md"
         >
           <Plus className="w-4 h-4" />
           <span>New Delivery</span>
         </button>
       </div>
+
 
       {/* Plans List */}
       <div className="space-y-3">

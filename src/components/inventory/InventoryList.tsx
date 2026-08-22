@@ -80,13 +80,13 @@ export const InventoryList: React.FC<InventoryListProps> = ({
               placeholder="Search by code, name, size..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-800/90 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:border-red-500"
+              className="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-3 py-2.5 text-sm text-slate-900 placeholder-slate-500 focus:outline-none focus:border-red-500 shadow-2xs"
             />
           </div>
 
           <button
             onClick={onOpenManualIntake}
-            className="btn-touch bg-red-600 hover:bg-red-500 text-white rounded-xl px-3 text-xs font-bold shrink-0 flex items-center gap-1 shadow-md shadow-red-900/30"
+            className="btn-touch bg-red-600 hover:bg-red-500 text-white rounded-xl px-3 text-xs font-bold shrink-0 flex items-center gap-1 shadow-md"
           >
             <Plus className="w-4 h-4" />
             <span>New SKU</span>
@@ -94,9 +94,9 @@ export const InventoryList: React.FC<InventoryListProps> = ({
         </div>
 
         {/* Stock Room / Freezer Location Filter Pills */}
-        <div className="p-1.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 flex items-center gap-1">
-            <Snowflake className="w-3 h-3 text-cyan-400" />
+        <div className="p-1.5 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-1">
+          <div className="text-[10px] font-extrabold text-slate-600 uppercase tracking-wider px-1 flex items-center gap-1">
+            <Snowflake className="w-3 h-3 text-cyan-600" />
             <span>Freezer & Storage Location ({dynamicLocations.length})</span>
           </div>
           <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar">
@@ -104,8 +104,8 @@ export const InventoryList: React.FC<InventoryListProps> = ({
               onClick={() => setSelectedLocation('ALL')}
               className={`px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 transition-all ${
                 selectedLocation === 'ALL'
-                  ? 'bg-cyan-500 text-slate-950 font-extrabold shadow'
-                  : 'bg-slate-800/80 text-slate-400 hover:text-slate-200'
+                  ? 'bg-cyan-600 text-white font-extrabold shadow'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
               }`}
             >
               All Storage
@@ -117,7 +117,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({
                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold shrink-0 transition-all ${
                   selectedLocation === loc
                     ? 'bg-cyan-600 text-white font-bold shadow'
-                    : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 border border-slate-700/50'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
                 }`}
               >
                 {loc === 'Day Delivery Temp Store' ? '🚚 Day Delivery' : loc.replace(' (Main)', '').replace(' (Backup)', '')}
@@ -132,11 +132,11 @@ export const InventoryList: React.FC<InventoryListProps> = ({
             onClick={() => setFilterLowStockOnly(!filterLowStockOnly)}
             className={`px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 flex items-center gap-1 border transition-all ${
               filterLowStockOnly
-                ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
-                : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
+                ? 'bg-amber-100 text-amber-900 border-amber-300 shadow'
+                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
             }`}
           >
-            <AlertTriangle className="w-3.5 h-3.5" />
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
             <span>Low Stock</span>
           </button>
 
@@ -146,8 +146,8 @@ export const InventoryList: React.FC<InventoryListProps> = ({
               onClick={() => setSelectedCategory(cat)}
               className={`px-3 py-1 rounded-lg text-xs font-semibold shrink-0 transition-all ${
                 selectedCategory === cat
-                  ? 'bg-slate-200 text-slate-900 font-bold shadow'
-                  : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/60'
+                  ? 'bg-[#0b2b3c] text-white font-bold shadow'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-300'
               }`}
             >
               {cat}
@@ -159,7 +159,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({
       {/* Item List Cards */}
       <div className="space-y-2">
         {filteredItems.length === 0 ? (
-          <div className="card-glass p-8 text-center text-slate-400 text-sm">
+          <div className="bg-white p-8 text-center text-slate-500 text-sm rounded-2xl border border-slate-200">
             No processed meat items matched your filter criteria.
           </div>
         ) : (
@@ -175,45 +175,45 @@ export const InventoryList: React.FC<InventoryListProps> = ({
               <div
                 key={item.id}
                 onClick={() => item.id && onSelectItem(item.id)}
-                className={`card-glass p-3.5 cursor-pointer hover:border-slate-600 transition-all border ${
-                  isLowStock ? 'border-amber-500/40 bg-slate-900/90' : 'border-slate-800 bg-slate-900/60'
+                className={`p-3.5 cursor-pointer rounded-2xl transition-all border bg-white shadow-2xs ${
+                  isLowStock ? 'border-amber-300' : 'border-slate-200 hover:border-slate-300'
                 }`}
               >
                 <div className="flex items-start justify-between">
                   <div className="space-y-1 flex-1 pr-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800/50">
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-200">
                         #{item.sku_code}
                       </span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-950/60 text-rose-300 border border-rose-800/40">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-100 text-rose-900 border border-rose-200">
                         {item.category}
                       </span>
                     </div>
 
-                    <h3 className="font-bold text-sm text-white tracking-tight leading-snug">
+                    <h3 className="font-extrabold text-sm text-slate-900 tracking-tight leading-snug">
                       {item.name}
                     </h3>
 
-                    <div className="text-xs text-slate-400 flex items-center gap-3">
-                      <span>Size: <strong className="text-slate-200">{item.size}</strong></span>
-                      <span>Pcs/Box: <strong className="text-amber-300">{item.pcs_per_box || 12}</strong></span>
-                      <span>Price: <strong className="text-slate-200">₱{item.latest_unit_cost?.toFixed(2) || '0.00'}</strong></span>
+                    <div className="text-xs text-slate-700 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                      <span>Size: <strong className="text-slate-900 font-bold">{item.size}</strong></span>
+                      <span>Pcs/Box: <strong className="text-slate-900 font-bold">{item.pcs_per_box || 12}</strong></span>
+                      <span>Price: <strong className="text-slate-900 font-bold">₱{item.latest_unit_cost?.toFixed(2) || '0.00'}</strong></span>
                     </div>
 
                     {/* Per-Freezer Stock Breakdown Tags */}
                     {item.stock_locations && item.stock_locations.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-1 mt-1.5 pt-1.5 border-t border-slate-800/80">
+                      <div className="flex flex-wrap items-center gap-1 mt-1.5 pt-1.5 border-t border-slate-100">
                         {item.stock_locations.map(loc => loc.qty > 0 && (
                           <span
                             key={loc.location_name}
                             className={`text-[9px] font-semibold px-1.5 py-0.5 rounded flex items-center gap-1 ${
                               loc.location_name === 'Day Delivery Temp Store'
-                                ? 'bg-amber-950/80 text-amber-300 border border-amber-800/60'
-                                : 'bg-slate-800/90 text-cyan-300 border border-slate-700'
+                                ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                                : 'bg-slate-100 text-slate-800 border border-slate-200'
                             }`}
                           >
                             <span>{loc.location_name === 'Day Delivery Temp Store' ? '🚚 Day Deliv:' : `${loc.location_name.split(' ')[0]}:`}</span>
-                            <strong className="font-mono text-white">{loc.qty}</strong>
+                            <strong className="font-mono text-slate-900">{loc.qty}</strong>
                           </span>
                         ))}
                       </div>
@@ -223,13 +223,13 @@ export const InventoryList: React.FC<InventoryListProps> = ({
                   {/* Quantity Badge & Box/Pcs calculation */}
                   <div className="text-right flex flex-col items-end justify-between shrink-0">
                     <div
-                      className={`px-3 py-1 rounded-xl text-center shadow-inner ${
+                      className={`px-3 py-1 rounded-xl text-center shadow-xs ${
                         isLowStock
-                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50'
-                          : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
+                          ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                          : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
                       }`}
                     >
-                      <div className="font-extrabold text-base leading-none">
+                      <div className="font-black text-base leading-none">
                         {displayQty}
                       </div>
                       <div className="text-[9px] font-bold uppercase tracking-wider mt-0.5">
@@ -237,8 +237,8 @@ export const InventoryList: React.FC<InventoryListProps> = ({
                       </div>
                     </div>
 
-                    <div className="text-[10px] font-bold text-amber-400 mt-1 flex items-center gap-0.5">
-                      <Box className="w-3 h-3" />
+                    <div className="text-[10px] font-bold text-slate-700 mt-1 flex items-center gap-0.5">
+                      <Box className="w-3 h-3 text-slate-500" />
                       <span>{totalPcs} total pcs</span>
                     </div>
                   </div>
@@ -251,3 +251,4 @@ export const InventoryList: React.FC<InventoryListProps> = ({
     </div>
   );
 };
+

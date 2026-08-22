@@ -233,31 +233,34 @@ export const DeliveryPlans: React.FC = () => {
   return (
     <div className="space-y-4">
       {/* Title & Action Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-white dark:bg-[#0f2434] p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
-        <div className="flex items-center gap-2 font-bold text-sm text-[#0b2b3c] dark:text-white">
-          <Truck className="w-5 h-5 text-amber-500 shrink-0" />
-          <span className="font-extrabold tracking-wide">Delivery Plans & Fulfillment</span>
+      <div className="flex items-center justify-between gap-1.5 bg-white dark:bg-[#0f2434] p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="flex items-center gap-1.5 font-bold text-xs sm:text-sm text-[#0b2b3c] dark:text-white shrink min-w-0">
+          <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 shrink-0" />
+          <span className="font-extrabold tracking-tight truncate">Delivery Plans</span>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <button
-            onClick={() => setShowResetConfirmModal(true)}
-            className="flex-1 sm:flex-initial btn-touch bg-rose-600 hover:bg-rose-500 text-white rounded-xl px-2.5 py-2 text-xs font-bold flex items-center justify-center gap-1 shadow-md transition-all"
-            title="Reset Delivery Schedule Data to 0"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span className="whitespace-nowrap">Reset Schedule</span>
-          </button>
-
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Primary Action Button */}
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex-1 sm:flex-initial btn-touch bg-amber-600 hover:bg-amber-500 text-white rounded-xl px-3 py-2 text-xs font-bold flex items-center justify-center gap-1 shadow-md transition-all"
+            className="btn-touch bg-amber-600 hover:bg-amber-500 text-white rounded-xl px-2.5 py-1.5 text-xs font-bold flex items-center gap-1 shadow-md transition-all shrink-0"
           >
-            <Plus className="w-4 h-4" />
-            <span className="whitespace-nowrap">New Delivery</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span className="whitespace-nowrap">+ New Delivery</span>
+          </button>
+
+          {/* Smaller Ghost Reset Button on Far Right */}
+          <button
+            onClick={() => setShowResetConfirmModal(true)}
+            className="btn-touch bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 border border-rose-300 dark:border-rose-800 rounded-xl px-2 py-1.5 text-[11px] font-bold flex items-center gap-1 transition-all shrink-0"
+            title="Reset Delivery Schedule Data to 0"
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span className="whitespace-nowrap">Reset</span>
           </button>
         </div>
       </div>
+
 
 
 

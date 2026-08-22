@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, DEFAULT_STOCK_LOCATIONS } from '../../db/database';
 import type { MeatCategory } from '../../types';
-import { Search, AlertTriangle, Plus, Box, Snowflake } from 'lucide-react';
+import { Search, AlertTriangle, Plus, Box, Snowflake, Settings } from 'lucide-react';
+import { FreezerManagerModal } from '../stock/FreezerManagerModal';
 
 interface InventoryListProps {
   onSelectItem: (itemId: number) => void;
@@ -32,8 +33,10 @@ export const InventoryList: React.FC<InventoryListProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<'All' | MeatCategory>('All');
   const [selectedLocation, setSelectedLocation] = useState<string>('ALL');
   const [filterLowStockOnly, setFilterLowStockOnly] = useState(false);
+  const [isFreezerManagerOpen, setIsFreezerManagerOpen] = useState(false);
 
   const items = useLiveQuery(() => db.items.toArray()) ?? [];
+  const dbFreezers = useLiveQuery(() => db.freezerLocations.toArray()) ?? [];
 
   // Compute dynamic list of all unique categories present in items + standard categories
   const dynamicCategories = Array.from(
@@ -43,10 +46,11 @@ export const InventoryList: React.FC<InventoryListProps> = ({
     ])
   ).filter(Boolean) as ('All' | MeatCategory)[];
 
-  // Compute dynamic list of all unique stock rooms / freezers (default + any newly created custom locations)
+  // Compute dynamic list of all unique stock rooms / freezers (default + custom DB freezers + item locations)
   const dynamicLocations = Array.from(
     new Set([
       ...DEFAULT_STOCK_LOCATIONS,
+      ...dbFreezers.map(f => f.name),
       ...items.flatMap(item => item.stock_locations?.map(l => l.location_name) || [])
     ])
   ).filter(Boolean);
@@ -70,6 +74,11 @@ export const InventoryList: React.FC<InventoryListProps> = ({
 
   return (
     <div className="space-y-3">
+      <FreezerManagerModal
+        isOpen={isFreezerManagerOpen}
+        onClose={() => setIsFreezerManagerOpen(false)}
+      />
+
       {/* Search Header & Category Filters */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
@@ -95,9 +104,18 @@ export const InventoryList: React.FC<InventoryListProps> = ({
 
         {/* Stock Room / Freezer Location Filter Pills */}
         <div className="p-1.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 flex items-center gap-1">
-            <Snowflake className="w-3 h-3 text-cyan-400" />
-            <span>Freezer & Storage Location ({dynamicLocations.length})</span>
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <Snowflake className="w-3 h-3 text-cyan-400" />
+              <span>Freezer & Storage Location ({dynamicLocations.length})</span>
+            </div>
+            <button
+              onClick={() => setIsFreezerManagerOpen(true)}
+              className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-0.5 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-800/50"
+            >
+              <Settings className="w-3 h-3" />
+              <span>Manage Freezers</span>
+            </button>
           </div>
           <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar">
             <button

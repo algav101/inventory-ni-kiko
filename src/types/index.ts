@@ -5,6 +5,14 @@ export interface StockLocationQty {
   qty: number;
 }
 
+export interface FreezerStorageLocation {
+  id?: number;
+  name: string;
+  is_default?: boolean;
+  notes?: string;
+  created_at: string;
+}
+
 export interface Item {
   id?: number;
   sku_code: string; // Internal stable SKU e.g. "MEAT-HD-001" or supplier code "4460"

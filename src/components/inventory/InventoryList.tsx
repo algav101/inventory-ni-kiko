@@ -34,6 +34,14 @@ export const InventoryList: React.FC<InventoryListProps> = ({
 
   const items = useLiveQuery(() => db.items.toArray()) ?? [];
 
+  // Compute dynamic list of all unique stock rooms / freezers (default + any newly created custom locations)
+  const dynamicLocations = Array.from(
+    new Set([
+      ...DEFAULT_STOCK_LOCATIONS,
+      ...items.flatMap(item => item.stock_locations?.map(l => l.location_name) || [])
+    ])
+  ).filter(Boolean);
+
   const filteredItems = items.filter(item => {
     const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
     const matchesSearch =
@@ -46,7 +54,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({
       : (item.stock_locations?.find(l => l.location_name === selectedLocation)?.qty ?? 0);
 
     const matchesLowStock = filterLowStockOnly ? itemQty <= item.low_stock_threshold : true;
-    const matchesLocation = selectedLocation === 'ALL' || itemQty > 0 || (item.stock_locations && item.stock_locations.some(l => l.location_name === selectedLocation));
+    const matchesLocation = selectedLocation === 'ALL' || (item.stock_locations && item.stock_locations.some(l => l.location_name === selectedLocation));
 
     return matchesCategory && matchesSearch && matchesLowStock && matchesLocation;
   });
@@ -80,7 +88,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({
         <div className="p-1.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
           <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 flex items-center gap-1">
             <Snowflake className="w-3 h-3 text-cyan-400" />
-            <span>Freezer & Storage Location</span>
+            <span>Freezer & Storage Location ({dynamicLocations.length})</span>
           </div>
           <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar">
             <button
@@ -93,7 +101,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({
             >
               All Storage
             </button>
-            {DEFAULT_STOCK_LOCATIONS.map(loc => (
+            {dynamicLocations.map(loc => (
               <button
                 key={loc}
                 onClick={() => setSelectedLocation(loc)}

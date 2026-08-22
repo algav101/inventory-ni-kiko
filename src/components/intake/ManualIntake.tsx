@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { db, logTransaction } from '../../db/database';
+import { db, logTransaction, DEFAULT_STOCK_LOCATIONS } from '../../db/database';
 import type { MeatCategory } from '../../types';
 import { PlusCircle, ArrowLeft, CheckCircle } from 'lucide-react';
 
@@ -29,6 +29,8 @@ export const ManualIntake: React.FC<ManualIntakeProps> = ({ onBack, onFinished }
   const [pcsPerBox, setPcsPerBox] = useState('12');
   const [unitCost, setUnitCost] = useState('');
   const [initialQty, setInitialQty] = useState('0'); // Default to 0
+  const [targetLocation, setTargetLocation] = useState('Freezer 1 (Main)');
+  const [customLocation, setCustomLocation] = useState('');
   const [threshold, setThreshold] = useState('5');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -57,6 +59,7 @@ export const ManualIntake: React.FC<ManualIntakeProps> = ({ onBack, onFinished }
     const cost = unitCost ? parseFloat(unitCost) : null;
     const lowThresh = parseFloat(threshold) || 5;
     const pcsBoxNum = parseInt(pcsPerBox) || 12;
+    const locName = targetLocation === 'CUSTOM' ? (customLocation.trim() || 'Custom Storage') : targetLocation;
     const now = new Date().toISOString();
 
     const itemId = await db.items.add({
@@ -68,9 +71,20 @@ export const ManualIntake: React.FC<ManualIntakeProps> = ({ onBack, onFinished }
       pcs_per_box: pcsBoxNum,
       latest_unit_cost: cost,
       current_qty: qty,
+      stock_locations: [
+        { location_name: locName, qty }
+      ],
       low_stock_threshold: lowThresh,
       created_at: now,
       updated_at: now,
+    });
+
+    // Register alias code for OCR matching
+    await db.supplierItemCodes.add({
+      item_id: itemId,
+      supplier_name: 'General Supplier',
+      supplier_code: finalSku,
+      created_at: now,
     });
 
     if (qty > 0) {
@@ -80,7 +94,7 @@ export const ManualIntake: React.FC<ManualIntakeProps> = ({ onBack, onFinished }
         qty,
         qty,
         cost,
-        `Manual SKU creation (+${qty} ${unit} = ${qty * pcsBoxNum} pcs)`
+        `Manual SKU creation in [${locName}] (+${qty} ${unit} = ${qty * pcsBoxNum} pcs)`
       );
     }
 
@@ -180,6 +194,37 @@ export const ManualIntake: React.FC<ManualIntakeProps> = ({ onBack, onFinished }
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-amber-300 font-mono font-bold"
               />
             </div>
+          </div>
+
+          {/* Initial Freezer Location Selector */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center justify-between">
+              <span>Target Storage Freezer / Location</span>
+              <span className="text-[10px] text-cyan-400 font-normal">Select or add custom freezer</span>
+            </label>
+            <select
+              value={targetLocation}
+              onChange={e => setTargetLocation(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-blue-500"
+            >
+              {DEFAULT_STOCK_LOCATIONS.map(loc => (
+                <option key={loc} value={loc}>
+                  ❄️ {loc}
+                </option>
+              ))}
+              <option value="CUSTOM">+ Add Custom Location...</option>
+            </select>
+
+            {targetLocation === 'CUSTOM' && (
+              <input
+                type="text"
+                placeholder="e.g. Cold Room B, Display Freezer #2"
+                value={customLocation}
+                onChange={e => setCustomLocation(e.target.value)}
+                className="w-full mt-2 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                required
+              />
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-2 text-xs">

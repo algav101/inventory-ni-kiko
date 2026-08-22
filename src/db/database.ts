@@ -8,7 +8,6 @@ import type {
   DeliveryLineItem,
   BackOrder,
   TransactionType,
-  FreezerStorageLocation,
 } from '../types';
 
 export class MeatInventoryDatabase extends Dexie {
@@ -19,12 +18,11 @@ export class MeatInventoryDatabase extends Dexie {
   deliveryPlans!: Table<DeliveryPlan, number>;
   deliveryLineItems!: Table<DeliveryLineItem, number>;
   backOrders!: Table<BackOrder, number>;
-  freezerLocations!: Table<FreezerStorageLocation, number>;
 
   constructor() {
     super('ProcessedMeatInventoryDB');
 
-    this.version(3).stores({
+    this.version(2).stores({
       items: '++id, sku_code, name, category, current_qty',
       supplierItemCodes: '++id, item_id, supplier_code, [supplier_name+supplier_code]',
       transactions: '++id, item_id, type, created_at',
@@ -32,7 +30,6 @@ export class MeatInventoryDatabase extends Dexie {
       deliveryPlans: '++id, client_id, delivery_date, status',
       deliveryLineItems: '++id, delivery_plan_id, item_id',
       backOrders: '++id, item_id, client_id, status',
-      freezerLocations: '++id, &name',
     });
   }
 }
@@ -76,93 +73,6 @@ export const DEFAULT_STOCK_LOCATIONS = [
 export function computeTotalQtyFromLocations(locations?: { location_name: string; qty: number }[]): number {
   if (!locations || locations.length === 0) return 0;
   return locations.reduce((sum, loc) => sum + (loc.qty || 0), 0);
-}
-
-// FREEZER / STORAGE LOCATION MANAGEMENT HELPERS
-export async function addFreezerLocation(name: string, notes?: string) {
-  const cleanName = name.trim();
-  if (!cleanName) return;
-
-  const existing = await db.freezerLocations.where('name').equals(cleanName).first();
-  if (!existing) {
-    await db.freezerLocations.add({
-      name: cleanName,
-      is_default: false,
-      notes: notes || '',
-      created_at: new Date().toISOString(),
-    });
-  }
-}
-
-export async function renameFreezerLocation(oldName: string, newName: string) {
-  const cleanOld = oldName.trim();
-  const cleanNew = newName.trim();
-  if (!cleanOld || !cleanNew || cleanOld === cleanNew) return;
-
-  return db.transaction('rw', [db.items, db.freezerLocations], async () => {
-    // 1. Update items table location names
-    const allItems = await db.items.toArray();
-    const now = new Date().toISOString();
-
-    for (const item of allItems) {
-      if (item.id && item.stock_locations) {
-        let modified = false;
-        const updatedLocs = item.stock_locations.map(l => {
-          if (l.location_name === cleanOld) {
-            modified = true;
-            return { ...l, location_name: cleanNew };
-          }
-          return l;
-        });
-
-        if (modified) {
-          await db.items.update(item.id, {
-            stock_locations: updatedLocs,
-            updated_at: now,
-          });
-        }
-      }
-    }
-
-    // 2. Update freezerLocations table if record exists
-    const existingRec = await db.freezerLocations.where('name').equals(cleanOld).first();
-    if (existingRec && existingRec.id) {
-      await db.freezerLocations.update(existingRec.id, { name: cleanNew });
-    } else {
-      await db.freezerLocations.add({
-        name: cleanNew,
-        is_default: false,
-        created_at: new Date().toISOString(),
-      });
-    }
-  });
-}
-
-export async function deleteFreezerLocation(locationName: string) {
-  const cleanName = locationName.trim();
-  if (!cleanName) return;
-
-  return db.transaction('rw', [db.items, db.freezerLocations], async () => {
-    const allItems = await db.items.toArray();
-    const now = new Date().toISOString();
-
-    for (const item of allItems) {
-      if (item.id && item.stock_locations) {
-        const filtered = item.stock_locations.filter(l => l.location_name !== cleanName);
-        if (filtered.length !== item.stock_locations.length) {
-          await db.items.update(item.id, {
-            stock_locations: filtered,
-            updated_at: now,
-          });
-        }
-      }
-    }
-
-    const rec = await db.freezerLocations.where('name').equals(cleanName).first();
-    if (rec && rec.id) {
-      await db.freezerLocations.delete(rec.id);
-    }
-  });
 }
 
 // Reset ALL inventory to ZERO (User requested feature with security auth)

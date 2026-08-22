@@ -9,7 +9,9 @@ import {
   Calendar,
   X,
   RotateCcw,
+  AlertTriangle,
 } from 'lucide-react';
+
 
 
 interface LineItemFormState {
@@ -217,47 +219,46 @@ export const DeliveryPlans: React.FC = () => {
     });
   };
 
-  const handleResetAllDeliveryPlans = async () => {
-    const confirmReset = window.confirm(
-      'RESET ALL DELIVERY PLANS & SCHEDULES TO 0?\n\nAre you sure you want to clear all scheduled and fulfilled delivery plans? This action will reset delivery schedule data to 0.'
-    );
-    if (confirmReset) {
-      await db.transaction('rw', [db.deliveryPlans, db.deliveryLineItems], async () => {
-        await db.deliveryPlans.clear();
-        await db.deliveryLineItems.clear();
-      });
-      alert('All delivery plans & schedule data have been reset to 0.');
-    }
+  const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
+
+  const executeResetDeliveryPlans = async () => {
+    await db.transaction('rw', [db.deliveryPlans, db.deliveryLineItems], async () => {
+      await db.deliveryPlans.clear();
+      await db.deliveryLineItems.clear();
+    });
+    setShowResetConfirmModal(false);
+    alert('All delivery plans & schedule data have been reset to 0.');
   };
 
   return (
     <div className="space-y-4">
       {/* Title & Action Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 font-bold text-base text-[#0b2b3c] dark:text-white">
-          <Truck className="w-5 h-5 text-amber-500" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-white dark:bg-[#0f2434] p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="flex items-center gap-2 font-bold text-sm text-[#0b2b3c] dark:text-white">
+          <Truck className="w-5 h-5 text-amber-500 shrink-0" />
           <span className="font-extrabold tracking-wide">Delivery Plans & Fulfillment</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
-            onClick={handleResetAllDeliveryPlans}
-            className="btn-touch bg-rose-600/90 hover:bg-rose-600 text-white rounded-xl px-2.5 py-2 text-xs font-bold shrink-0 flex items-center gap-1 shadow-md"
+            onClick={() => setShowResetConfirmModal(true)}
+            className="flex-1 sm:flex-initial btn-touch bg-rose-600 hover:bg-rose-500 text-white rounded-xl px-2.5 py-2 text-xs font-bold flex items-center justify-center gap-1 shadow-md transition-all"
             title="Reset Delivery Schedule Data to 0"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset Schedule</span>
+            <span className="whitespace-nowrap">Reset Schedule</span>
           </button>
 
           <button
             onClick={() => setShowCreateModal(true)}
-            className="btn-touch bg-amber-600 hover:bg-amber-500 text-white rounded-xl px-3 py-2 text-xs font-bold shrink-0 flex items-center gap-1 shadow-md"
+            className="flex-1 sm:flex-initial btn-touch bg-amber-600 hover:bg-amber-500 text-white rounded-xl px-3 py-2 text-xs font-bold flex items-center justify-center gap-1 shadow-md transition-all"
           >
             <Plus className="w-4 h-4" />
-            <span>New Delivery</span>
+            <span className="whitespace-nowrap">New Delivery</span>
           </button>
         </div>
       </div>
+
 
 
 
@@ -491,9 +492,47 @@ export const DeliveryPlans: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* CONFIRM RESET SCHEDULE MODAL */}
+      {showResetConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#0f2434] text-slate-900 dark:text-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400">
+              <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-950 flex items-center justify-center shrink-0 border border-rose-300">
+                <AlertTriangle className="w-6 h-6 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-base text-slate-900 dark:text-white">Confirm Delivery Schedule Reset</h3>
+                <span className="text-xs text-rose-600 font-bold">Reset All Delivery Data to 0</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+              Are you sure you want to <strong>reset all delivery plans and schedules to 0</strong>? This action will permanently clear all pending and completed delivery schedule records.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                onClick={() => setShowResetConfirmModal(false)}
+                className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeResetDeliveryPlans}
+                className="btn-touch px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs shadow-md flex items-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Yes, Reset All to 0</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
 
 const DeliveryPlanCard: React.FC<{ plan: DeliveryPlan; onConfirm: () => void }> = ({ plan, onConfirm }) => {
   const lineItems = useLiveQuery(() => db.deliveryLineItems.where('delivery_plan_id').equals(plan.id!).toArray(), [plan.id]) ?? [];
